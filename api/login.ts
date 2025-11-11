@@ -4,6 +4,7 @@ import { signToken } from '../../lib/auth';
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
@@ -14,6 +15,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   }
 
   try {
+    // Corrected query to select 'password' column instead of 'password_hash'
     const { rows } = await sql('SELECT id, password, role FROM users WHERE username = $1', [username]);
     
     if (rows.length === 0) {
@@ -21,6 +23,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     }
 
     const user = rows[0];
+    
+    // Plain text password comparison
     const isPasswordValid = password === user.password;
 
     if (!isPasswordValid) {
@@ -29,7 +33,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
 
     const token = signToken({ userId: user.id, role: user.role });
 
-    res.status(200).json({ 
+    return res.status(200).json({ 
       token, 
       user: {
         id: user.id,
@@ -38,7 +42,8 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       } 
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    console.error('[API Login Error]:', error);
+    // Ensure a JSON error response is always sent, preventing the client from parsing HTML.
+    return res.status(500).json({ message: 'A server error occurred during login. Please check server logs.' });
   }
 };
