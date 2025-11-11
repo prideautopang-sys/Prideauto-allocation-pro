@@ -11,15 +11,14 @@ import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ConfirmMatchDeleteModal from './components/ConfirmMatchDeleteModal';
 import MultiSelectFilter from './components/MultiSelectFilter';
 import StatisticsPage from './components/StatisticsPage';
-import { PlusIcon, ClipboardPlusIcon, CarIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, UserGroupIcon } from './components/icons';
+import { PlusIcon, ClipboardPlusIcon, CarIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon } from './components/icons';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
-import UserManagementPage from './pages/UserManagementPage';
 
 
 type SortableKeys = keyof Car;
 type FilterKeys = 'dealerCode' | 'model' | 'color' | 'carType' | 'poType' | 'stockLocation' | 'status';
-type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'users';
+type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold';
 
 
 const App: React.FC = () => {
@@ -514,7 +513,6 @@ const App: React.FC = () => {
                 <NavButton view="matching" label={`Matching (${matches.length})`} icon={<LinkIcon />} />
                 <NavButton view="sold" label={`Sold Cars (${soldCars.length})`} icon={<ShoppingCartIcon />} />
                 <NavButton view="stats" label="Statistics" icon={<ChartBarIcon />} />
-                {user.role === 'executive' && <NavButton view="users" label="User Management" icon={<UserGroupIcon />} />}
             </div>
         </nav>
       </header>
@@ -629,9 +627,6 @@ const App: React.FC = () => {
               )}
               {activeView === 'stats' && (
                   <StatisticsPage stats={stats} />
-              )}
-              {activeView === 'users' && user.role === 'executive' && (
-                <UserManagementPage token={token} currentUser={user} />
               )}
             </>
           )}

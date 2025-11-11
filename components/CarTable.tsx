@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Car, CarStatus } from '../types';
 import { EditIcon, ArrowUpIcon, ArrowDownIcon, TrashIcon } from './icons';
@@ -169,7 +170,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, onSort, sor
                       <div className="text-xs">{car.poType}</div>
                     </td>
                     <td className={`${tdClasses} font-semibold text-gray-900 dark:text-white`}>
-                      ฿{car.price.toLocaleString()}
+                      {car.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className={tdClasses}>
                       <StatusBadge status={car.status} />

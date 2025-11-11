@@ -7,8 +7,7 @@ interface ConfirmDeleteModalProps {
   onClose: () => void;
   onConfirm: () => void;
   car: Car | null;
-  // FIX: Added 'users' to the viewContext type to match the 'View' type in App.tsx and resolve the type error.
-  viewContext: 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'users' | null;
+  viewContext: 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | null;
 }
 
 const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({ isOpen, onClose, onConfirm, car, viewContext }) => {

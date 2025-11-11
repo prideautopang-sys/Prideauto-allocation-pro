@@ -48,10 +48,11 @@ export interface Match {
 
 export type UserRole = 'executive' | 'admin' | 'user';
 
+// FIX: Added the AppUser interface which was missing and causing import errors.
 export interface AppUser {
   id: string;
   username: string;
+  password?: string;
   role: UserRole;
   createdAt?: string;
-  password?: string; // Only for creating/editing, should not be stored in frontend state
 }

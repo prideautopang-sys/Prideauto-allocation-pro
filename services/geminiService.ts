@@ -20,7 +20,7 @@ export const generateCarDescription = async (car: Car): Promise<string> => {
 - ปี: ${new Date(car.allocationDate).getFullYear()}
 - สี: ${car.color}
 - ประเภทรถ: ${car.carType}
-- ราคา: ${car.price.toLocaleString()} บาท
+- ราคา: ${car.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
 
 เน้นจุดเด่นของรถรุ่นนี้, และความคุ้มค่า ให้เหมาะกับการโพสต์ขายออนไลน์ในประเทศไทย เขียนเป็นภาษาไทยที่สั้นกระชับและดึงดูดลูกค้า`;
 
