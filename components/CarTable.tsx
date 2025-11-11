@@ -20,6 +20,15 @@ interface CarTableProps {
   userRole: UserRole;
 }
 
+const formatDate = (dateString?: string | null): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
 const SortableHeader: React.FC<{
     columnKey: SortableKeys,
     title: string,
@@ -47,7 +56,7 @@ const SortableHeader: React.FC<{
 
 const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, onSort, sortConfig, view, selectedCarIds = [], onSelectCar, onSelectAll, userRole }) => {
   const thClasses = "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider";
-  const tdClasses = "px-4 py-2 text-sm text-gray-500 dark:text-gray-400 align-top whitespace-nowrap";
+  const tdClasses = "px-4 py-2 text-sm text-gray-500 dark:text-gray-400 align-top";
   
   const baseHeaders: { key: SortableKeys, title: string }[] = [
       { key: 'allocationDate', title: 'No. / Date'},
@@ -73,7 +82,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, onSort, sor
     return (
         <div className="flex items-start">
             <span className="font-semibold w-16 shrink-0 text-gray-600 dark:text-gray-400">{label}:</span>
-            <span>{value}</span>
+            <span className="break-all">{value}</span>
         </div>
     );
   };
@@ -138,19 +147,19 @@ const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, onSort, sor
                         </td>
                     )}
                     {/* No. / Date */}
-                    <td className={tdClasses}>
+                    <td className={`${tdClasses} whitespace-nowrap`}>
                       <div className="font-semibold text-gray-700 dark:text-gray-300">{index + 1}</div>
-                      <div className="text-xs">{new Date(car.allocationDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                      <div className="text-xs">{formatDate(car.allocationDate)}</div>
                     </td>
-                    <td className={tdClasses}>
-                        <div className="font-medium text-gray-900 dark:text-white">{car.dealerName}</div>
+                    <td className={`${tdClasses} max-w-xs`}>
+                        <div className="font-medium text-gray-900 dark:text-white break-words">{car.dealerName}</div>
                         <div className="text-xs">{car.dealerCode}</div>
                     </td>
-                     <td className={tdClasses}>
-                        <div id={`car-model-${car.id}`} className="font-medium text-gray-900 dark:text-white">{car.model}</div>
+                     <td className={`${tdClasses} max-w-xs`}>
+                        <div id={`car-model-${car.id}`} className="font-medium text-gray-900 dark:text-white break-words">{car.model}</div>
                         <div className="text-xs">{car.color}</div>
                     </td>
-                    <td className={`${tdClasses} text-xs font-mono min-w-[240px]`}>
+                    <td className={`${tdClasses} text-xs font-mono`}>
                       <IdentifierRow label="VIN" value={car.vin} />
                       <IdentifierRow label="Engine" value={car.engineNo} />
                       <IdentifierRow label="F.Motor" value={car.frontMotorNo} />
@@ -158,21 +167,21 @@ const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, onSort, sor
                       <IdentifierRow label="Battery" value={car.batteryNo} />
                     </td>
                     {view === 'stock' && (
-                       <td className={tdClasses}>
+                       <td className={`${tdClasses} max-w-xs`}>
                           <div className="font-medium text-gray-900 dark:text-white">{car.stockLocation}</div>
                           {car.stockInDate && <div className="text-xs">
-                            {new Date(car.stockInDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
+                            {formatDate(car.stockInDate)}
                           </div>}
                       </td>
                     )}
-                    <td className={tdClasses}>
-                      <div className="font-medium text-gray-900 dark:text-white">{car.carType}</div>
+                    <td className={`${tdClasses} max-w-xs`}>
+                      <div className="font-medium text-gray-900 dark:text-white break-words">{car.carType}</div>
                       <div className="text-xs">{car.poType}</div>
                     </td>
-                    <td className={`${tdClasses} font-semibold text-gray-900 dark:text-white`}>
+                    <td className={`${tdClasses} font-semibold text-gray-900 dark:text-white whitespace-nowrap`}>
                       {car.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className={tdClasses}>
+                    <td className={`${tdClasses} whitespace-nowrap`}>
                       <StatusBadge status={car.status} />
                     </td>
                     

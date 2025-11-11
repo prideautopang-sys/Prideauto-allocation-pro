@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Match, Car, MatchStatus } from '../types';
 import { EditIcon } from './icons';
@@ -13,6 +14,15 @@ interface SoldCarTableProps {
   soldData: SoldCarData[];
   onEditMatch: (match: Match) => void;
   userRole: UserRole;
+}
+
+const formatDate = (dateString?: string | null): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 }
 
 const SoldCarTable: React.FC<SoldCarTableProps> = ({ soldData, onEditMatch, userRole }) => {
@@ -38,34 +48,34 @@ const SoldCarTable: React.FC<SoldCarTableProps> = ({ soldData, onEditMatch, user
             if (!match) return null; // Should not happen with the filter in App.tsx
             return (
               <tr key={car.id} className="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 hover:bg-sky-100 dark:hover:bg-sky-800/50">
-                <td className={tdClasses}>
-                  {new Date(car.allocationDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
+                <td className={`${tdClasses} whitespace-nowrap`}>
+                  {formatDate(car.allocationDate)}
                 </td>
-                <td className={tdClasses}>
+                <td className={`${tdClasses} max-w-xs`}>
                   <div className="font-medium text-gray-900 dark:text-white">{car.model}</div>
                   <div className="text-xs">{car.color}</div>
-                  <div className="text-xs font-mono mt-1">{car.vin}</div>
+                  <div className="text-xs font-mono mt-1 break-all">{car.vin}</div>
                 </td>
-                 <td className={tdClasses}>
+                 <td className={`${tdClasses} max-w-xs`}>
                     {car.stockInDate ? (
                         <>
                             <div className="font-medium text-gray-900 dark:text-white">{car.stockLocation}</div>
                             <div className="text-xs">
-                                {new Date(car.stockInDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                {formatDate(car.stockInDate)}
                             </div>
                         </>
                     ) : (
                         <span className="text-gray-400 italic">N/A</span>
                     )}
                 </td>
-                <td className={tdClasses}>
+                <td className={`${tdClasses} max-w-xs`}>
                   <div className="font-medium text-gray-900 dark:text-white">ลูกค้า : {match.customerName}</div>
                   <div className="text-xs">เซลล์ : {match.salesperson}</div>
                 </td>
                 <td className={tdClasses}>
                     <div className="font-medium text-gray-900 dark:text-white">
                         {match.saleDate
-                            ? `ตัดขาย: ${new Date(match.saleDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}`
+                            ? `ตัดขาย: ${formatDate(match.saleDate)}`
                             : <span className="text-gray-400">ยังไม่ระบุวันตัดขาย</span>
                         }
                     </div>
@@ -75,7 +85,7 @@ const SoldCarTable: React.FC<SoldCarTableProps> = ({ soldData, onEditMatch, user
                         </span>
                     </div>
                 </td>
-                <td className={`${tdClasses} font-semibold text-gray-900 dark:text-white`}>
+                <td className={`${tdClasses} font-semibold text-gray-900 dark:text-white whitespace-nowrap`}>
                   {car.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
                 {userRole !== 'user' && 

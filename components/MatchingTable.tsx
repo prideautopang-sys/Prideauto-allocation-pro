@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Match, Car } from '../types';
 import { EditIcon, TrashIcon } from './icons';
@@ -10,6 +11,15 @@ interface MatchingTableProps {
   onEdit: (match: Match) => void;
   onDelete: (match: Match) => void;
   userRole: UserRole;
+}
+
+const formatDate = (dateString?: string | null): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 }
 
 const MatchingTable: React.FC<MatchingTableProps> = ({ matches, cars, onEdit, onDelete, userRole }) => {
@@ -36,11 +46,11 @@ const MatchingTable: React.FC<MatchingTableProps> = ({ matches, cars, onEdit, on
             const car = carsById.get(match.carId);
             return (
               <tr key={match.id} className="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 hover:bg-sky-100 dark:hover:bg-sky-800/50">
-                <td className={tdClasses}>
+                <td className={`${tdClasses} max-w-xs`}>
                   <div className="font-medium text-gray-900 dark:text-white">ลูกค้า : {match.customerName}</div>
                   <div className="text-xs">เซลล์ : {match.salesperson}</div>
                 </td>
-                <td className={tdClasses}>
+                <td className={`${tdClasses} max-w-xs`}>
                   {car ? (
                     <>
                       <div className="font-medium text-gray-900 dark:text-white">{car.model}</div>
@@ -54,7 +64,7 @@ const MatchingTable: React.FC<MatchingTableProps> = ({ matches, cars, onEdit, on
                 <td className={tdClasses}>
                     <div className="font-medium text-gray-900 dark:text-white">
                         {match.saleDate
-                            ? `ตัดขาย: ${new Date(match.saleDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}`
+                            ? `ตัดขาย: ${formatDate(match.saleDate)}`
                             : <span className="text-gray-400">ยังไม่ระบุวันตัดขาย</span>
                         }
                     </div>

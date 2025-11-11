@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AppUser } from '../types';
 import { EditIcon, TrashIcon } from './icons';
@@ -7,6 +8,18 @@ interface UserTableProps {
   onEdit: (user: AppUser) => void;
   onDelete: (user: AppUser) => void;
 }
+
+const formatDate = (dateString?: string | null): string => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
 
 const UserTable: React.FC<UserTableProps> = ({ users, onEdit, onDelete }) => {
   const thClasses = "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider";
@@ -33,7 +46,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onEdit, onDelete }) => {
                 </span>
               </td>
               <td className={tdClasses}>
-                {user.createdAt ? new Date(user.createdAt).toLocaleString('th-TH') : 'N/A'}
+                {formatDate(user.createdAt)}
               </td>
               <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium align-top">
                 <div className="flex items-center justify-end space-x-1">
