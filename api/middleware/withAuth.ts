@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { verifyToken } from '../../lib/auth';
+import { verifyToken } from '@/lib/auth';
 
 type Role = 'executive' | 'admin' | 'user';
 
