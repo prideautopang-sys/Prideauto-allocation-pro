@@ -11,14 +11,15 @@ import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ConfirmMatchDeleteModal from './components/ConfirmMatchDeleteModal';
 import MultiSelectFilter from './components/MultiSelectFilter';
 import StatisticsPage from './components/StatisticsPage';
-import { PlusIcon, ClipboardPlusIcon, CarIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon } from './components/icons';
+import { PlusIcon, ClipboardPlusIcon, CarIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, UserGroupIcon } from './components/icons';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
+import UserManagementPage from './pages/UserManagementPage';
 
 
 type SortableKeys = keyof Car;
 type FilterKeys = 'dealerCode' | 'model' | 'color' | 'carType' | 'poType' | 'stockLocation' | 'status';
-type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold';
+type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'users';
 
 
 const App: React.FC = () => {
@@ -369,7 +370,7 @@ const App: React.FC = () => {
   const carsInStockForMatching = useMemo(() => cars.filter(c => c.status === CarStatus.IN_STOCK), [cars]);
 
   const processedCars = useMemo(() => {
-    if (activeView === 'matching' || activeView === 'stats' || activeView === 'sold') return [];
+    if (!['allocation', 'stock'].includes(activeView)) return [];
     const sourceCars = activeView === 'stock' ? stockCars : allocatedCars;
     
     let filtered = sourceCars.filter(car => {
@@ -487,7 +488,7 @@ const App: React.FC = () => {
                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Car Allocation</h1>
           </div>
            <div className="flex items-center space-x-2">
-                {user.role !== 'user' && (
+                {user.role !== 'user' && (activeView === 'allocation' || activeView === 'stock') && (
                   <>
                   <button
                       onClick={() => setIsImportModalOpen(true)}
@@ -513,6 +514,7 @@ const App: React.FC = () => {
                 <NavButton view="matching" label={`Matching (${matches.length})`} icon={<LinkIcon />} />
                 <NavButton view="sold" label={`Sold Cars (${soldCars.length})`} icon={<ShoppingCartIcon />} />
                 <NavButton view="stats" label="Statistics" icon={<ChartBarIcon />} />
+                {user.role === 'executive' && <NavButton view="users" label="User Management" icon={<UserGroupIcon />} />}
             </div>
         </nav>
       </header>
@@ -627,6 +629,9 @@ const App: React.FC = () => {
               )}
               {activeView === 'stats' && (
                   <StatisticsPage stats={stats} />
+              )}
+              {activeView === 'users' && user.role === 'executive' && (
+                <UserManagementPage token={token} currentUser={user} />
               )}
             </>
           )}

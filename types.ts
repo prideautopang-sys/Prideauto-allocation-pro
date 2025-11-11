@@ -45,3 +45,13 @@ export interface Match {
   licensePlate?: string;
   notes?: string;
 }
+
+export type UserRole = 'executive' | 'admin' | 'user';
+
+export interface AppUser {
+  id: string;
+  username: string;
+  role: UserRole;
+  createdAt?: string;
+  password?: string; // Only for creating/editing, should not be stored in frontend state
+}
