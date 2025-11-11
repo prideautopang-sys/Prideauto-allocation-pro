@@ -22,7 +22,13 @@ export async function sql(query: string, params: any[] = []) {
     return result;
   } finally {
     if (client) {
-      client.release();
+      try {
+        // Release the client back to the pool.
+        client.release();
+      } catch (releaseError) {
+        // Log the error but don't re-throw, to avoid masking an original error.
+        console.error('Error releasing database client:', releaseError);
+      }
     }
   }
 }
