@@ -86,7 +86,7 @@ const SoldCarTable: React.FC<SoldCarTableProps> = ({ soldData, onEditMatch, user
                     </div>
                 </td>
                 <td className={`${tdClasses} font-semibold text-gray-900 dark:text-white whitespace-nowrap`}>
-                  {car.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {car.price.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
                 {userRole !== 'user' && 
                   <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium align-top">

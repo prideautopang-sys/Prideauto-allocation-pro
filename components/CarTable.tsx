@@ -77,9 +77,9 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, vi
                   </div>
 
                   {/* Center: Main Info */}
-                  <div className="flex-grow grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+                  <div className="flex-grow grid grid-cols-2 md:grid-cols-7 gap-x-6 gap-y-4">
                       {/* Dealer / Model */}
-                      <div>
+                      <div className="col-span-2 md:col-span-2">
                           <div className="font-bold text-gray-800 dark:text-white">{car.dealerName}</div>
                           <div className="text-xs text-gray-400 dark:text-gray-500">{car.dealerCode} | Mahasarakham</div>
                           <div className="font-semibold text-gray-700 dark:text-gray-300 mt-2">{car.model}</div>
@@ -87,7 +87,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, vi
                       </div>
 
                       {/* Vehicle Identifiers */}
-                      <div>
+                      <div className="col-span-2 md:col-span-2">
                           <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Identifiers</h4>
                           <div className="space-y-1">
                               <IdentifierRow label="VIN" value={car.vin} />
@@ -98,37 +98,37 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, vi
                           </div>
                       </div>
                       
-                      {/* Type / Price / Status */}
-                      <div>
-                           <div className="flex flex-col items-start space-y-2">
-                              <div>
-                                <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Type</h4>
-                                <div className="font-medium text-gray-900 dark:text-white text-sm">{car.carType || 'Normal'}</div>
-                                <div className="text-xs">{car.poType || 'Allocation'}</div>
+                      {/* Type */}
+                      <div className="col-span-1">
+                        <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Type</h4>
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">{car.carType || 'Normal'}</div>
+                        <div className="text-xs">{car.poType || 'Allocation'}</div>
+                      </div>
+
+                      {/* Price */}
+                      <div className="col-span-1">
+                        <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Price</h4>
+                        <div className="font-bold text-gray-800 dark:text-white">
+                            {car.price.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                      
+                      {/* Status */}
+                       <div className="col-span-1">
+                         <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Status</h4>
+                         <div className="flex flex-col items-start space-y-1">
+                            <StatusBadge status={car.status} />
+                            {car.status === CarStatus.RESERVED && match && (
+                              <div className="text-xs font-medium text-purple-600 dark:text-purple-400 px-1">
+                                  ({match.status})
                               </div>
-                               <div>
-                                <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Price</h4>
-                                <div className="font-bold text-gray-800 dark:text-white">
-                                    {car.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            )}
+                            {car.stockLocation && (
+                                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
+                                    สาขา: {car.stockLocation}
                                 </div>
-                              </div>
-                               <div>
-                                 <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Status</h4>
-                                 <div className="flex flex-col items-start space-y-1">
-                                    <StatusBadge status={car.status} />
-                                    {car.status === CarStatus.RESERVED && match && (
-                                      <div className="text-xs font-medium text-purple-600 dark:text-purple-400 px-1">
-                                          ({match.status})
-                                      </div>
-                                    )}
-                                    {car.stockLocation && (
-                                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
-                                            สาขา: {car.stockLocation}
-                                        </div>
-                                    )}
-                                  </div>
-                              </div>
-                           </div>
+                            )}
+                          </div>
                       </div>
                   </div>
 
