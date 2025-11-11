@@ -20,16 +20,29 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                 return res.status(400).json({ message: "Role is required for an update." });
             }
 
-            // For now, only role update is supported. Password update can be added later.
-            // A more complex implementation would check if the password field is present and not empty.
-            // NOTE: This simple version only updates the role.
-            const query = `
-                UPDATE users SET 
-                    role = $1, updated_at = NOW()
-                WHERE id = $2
-                RETURNING id, username, role, created_at as "createdAt";
-            `;
-            const params = [role, id];
+            // Build the query dynamically based on whether a new password is provided.
+            let query;
+            let params;
+
+            if (password && password.trim() !== '') {
+                // If a new password is provided, update both role and password.
+                query = `
+                    UPDATE users SET 
+                        role = $1, password = $2, updated_at = NOW()
+                    WHERE id = $3
+                    RETURNING id, username, role, created_at as "createdAt";
+                `;
+                params = [role, password, id];
+            } else {
+                // If password is not provided, update only the role.
+                query = `
+                    UPDATE users SET 
+                        role = $1, updated_at = NOW()
+                    WHERE id = $2
+                    RETURNING id, username, role, created_at as "createdAt";
+                `;
+                params = [role, id];
+            }
             
             const { rows } = await sql(query, params);
             if (rows.length === 0) {
