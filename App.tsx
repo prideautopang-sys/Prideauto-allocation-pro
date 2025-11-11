@@ -13,6 +13,7 @@ import StatisticsPage from './components/StatisticsPage';
 import { PlusIcon, ClipboardPlusIcon, CarIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon, CalendarIcon } from './components/icons';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
+import MultiSelectFilter from './components/MultiSelectFilter';
 
 
 type SortableKeys = keyof Car;
@@ -23,7 +24,7 @@ interface Filters {
   startDate: string;
   endDate: string;
   dealerCode: string;
-  model: string;
+  model: string[];
   color: string;
   carType: string;
   poType: string;
@@ -35,7 +36,7 @@ const initialFilters: Filters = {
   startDate: '',
   endDate: '',
   dealerCode: 'All',
-  model: 'All',
+  model: [],
   color: 'All',
   carType: 'All',
   poType: 'All',
@@ -331,6 +332,10 @@ const App: React.FC = () => {
     setStagedFilters(prev => ({ ...prev, [name]: value }));
   };
   
+  const handleMultiSelectChange = (filterName: 'model') => (selected: string[]) => {
+    setStagedFilters(prev => ({ ...prev, [filterName]: selected }));
+  };
+  
   const handleApplyFilters = () => {
     setActiveFilters(stagedFilters);
   }
@@ -382,7 +387,7 @@ const App: React.FC = () => {
       ) : true;
 
       const matchesDealer = dealerCode === 'All' || car.dealerCode === dealerCode;
-      const matchesModel = model === 'All' || car.model === model;
+      const matchesModel = model.length === 0 || model.includes(car.model);
       const matchesColor = color === 'All' || car.color === color;
       const matchesCarType = carType === 'All' || car.carType === carType;
       const matchesPoType = poType === 'All' || car.poType === poType;
@@ -462,10 +467,10 @@ const App: React.FC = () => {
 
   const FilterDropdown: React.FC<{ label: string; name: keyof Filters; options: string[] }> = ({ label, name, options }) => (
     <div>
-        <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
+        <label htmlFor={name as string} className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
         <select 
-            id={name} 
-            name={name} 
+            id={name as string} 
+            name={name as string} 
             value={stagedFilters[name] as string} 
             onChange={handleFilterChange} 
             className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -490,10 +495,10 @@ const App: React.FC = () => {
         <div className="py-4 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between">
                  <div className="flex items-center space-x-3">
-                    <div className="text-sky-600 dark:text-sky-400">
-                        <CarIcon />
+                    <div className="flex flex-row items-baseline justify-center space-x-1.5">
+                        <span className="font-bold text-gray-800 dark:text-gray-200 text-2xl">PRIDE</span>
+                        <span className="font-bold text-gray-800 dark:text-gray-200 text-2xl">AUTO</span>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Car Allocation</h1>
                 </div>
                 <div className="flex items-center space-x-2">
                     {user.role !== 'user' && (
@@ -577,7 +582,7 @@ const App: React.FC = () => {
                                 <input type="date" name="endDate" id="endDate" value={stagedFilters.endDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                             </div>
                             <FilterDropdown label="รหัส Dealer" name="dealerCode" options={filterOptions.dealerCodes} />
-                            <FilterDropdown label="รุ่นรถ" name="model" options={filterOptions.models} />
+                            <MultiSelectFilter label="รุ่นรถ" options={filterOptions.models} selectedOptions={stagedFilters.model} onChange={handleMultiSelectChange('model')} />
                             <FilterDropdown label="สีรถ" name="color" options={filterOptions.colors} />
                             <FilterDropdown label="Car Type" name="carType" options={filterOptions.carTypes} />
                             <FilterDropdown label="PO Type" name="poType" options={filterOptions.poTypes} />

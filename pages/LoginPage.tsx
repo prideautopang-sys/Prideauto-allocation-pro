@@ -28,9 +28,9 @@ const LoginPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full">
           <div className="flex justify-center mb-6">
             <div className="p-1 bg-white rounded-md shadow-md">
-              <div className="w-40 h-16 border-2 border-cyan-400 flex flex-row items-center justify-center bg-white space-x-2">
-                <span className="font-bold text-cyan-500 text-xl tracking-wider">PRIDE</span>
-                <span className="text-md text-gray-500">AUTO</span>
+              <div className="w-40 h-16 border-2 border-gray-300 dark:border-gray-600 flex flex-row items-center justify-center bg-white dark:bg-gray-800 space-x-2">
+                <span className="font-bold text-gray-800 dark:text-gray-200 text-xl">PRIDE</span>
+                <span className="font-bold text-gray-800 dark:text-gray-200 text-xl">AUTO</span>
               </div>
             </div>
           </div>
