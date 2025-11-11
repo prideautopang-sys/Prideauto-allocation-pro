@@ -1,7 +1,7 @@
 import { VercelResponse } from '@vercel/node';
-import { sql } from '../../lib/db';
-import { withAuth, AuthenticatedRequest } from '../middleware/withAuth';
-import { Car } from '../../types';
+import { sql } from '../../lib/db.js';
+import { withAuth, AuthenticatedRequest } from '../middleware/withAuth.js';
+import { Car } from '../../types.js';
 
 const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
     const { id } = req.query;

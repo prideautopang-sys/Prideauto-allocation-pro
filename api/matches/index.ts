@@ -1,7 +1,7 @@
 import { VercelResponse } from '@vercel/node';
-import { sql } from '../../lib/db';
-import { withAuth, AuthenticatedRequest } from '../middleware/withAuth';
-import { Match } from '../../types';
+import { sql } from '../../lib/db.js';
+import { withAuth, AuthenticatedRequest } from '../middleware/withAuth.js';
+import { Match } from '../../types.js';
 
 const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
   // GET all matches

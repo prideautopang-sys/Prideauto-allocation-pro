@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { sql } from '../lib/db';
-import { signToken } from '../lib/auth';
+import { sql } from '../lib/db.js';
+import { signToken } from '../lib/auth.js';
 
 export default async (req: VercelRequest, res: VercelResponse) => {
   // Explicitly check for environment variables at the start.
