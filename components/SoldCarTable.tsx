@@ -29,6 +29,7 @@ const SoldCarTable: React.FC<SoldCarTableProps> = ({ soldData, onEditMatch, user
             <th scope="col" className={thClasses}>Stock Info</th>
             <th scope="col" className={thClasses}>ลูกค้า / เซลล์</th>
             <th scope="col" className={thClasses}>Sale Details</th>
+            <th scope="col" className={thClasses}>Price</th>
             {userRole !== 'user' && <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>}
           </tr>
         </thead>
@@ -73,6 +74,9 @@ const SoldCarTable: React.FC<SoldCarTableProps> = ({ soldData, onEditMatch, user
                             {match.status}
                         </span>
                     </div>
+                </td>
+                <td className={`${tdClasses} font-semibold text-gray-900 dark:text-white`}>
+                  {car.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
                 {userRole !== 'user' && 
                   <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium align-top">

@@ -47,7 +47,7 @@ const SortableHeader: React.FC<{
 
 const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, onSort, sortConfig, view, selectedCarIds = [], onSelectCar, onSelectAll, userRole }) => {
   const thClasses = "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider";
-  const tdClasses = "px-4 py-2 text-sm text-gray-500 dark:text-gray-400 align-top";
+  const tdClasses = "px-4 py-2 text-sm text-gray-500 dark:text-gray-400 align-top whitespace-nowrap";
   
   const baseHeaders: { key: SortableKeys, title: string }[] = [
       { key: 'allocationDate', title: 'No. / Date'},
@@ -73,7 +73,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, onSort, sor
     return (
         <div className="flex items-start">
             <span className="font-semibold w-16 shrink-0 text-gray-600 dark:text-gray-400">{label}:</span>
-            <span className="break-all">{value}</span>
+            <span>{value}</span>
         </div>
     );
   };
@@ -142,7 +142,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, onSort, sor
                       <div className="font-semibold text-gray-700 dark:text-gray-300">{index + 1}</div>
                       <div className="text-xs">{new Date(car.allocationDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
                     </td>
-                    <td className={`${tdClasses} max-w-xs break-words`}>
+                    <td className={tdClasses}>
                         <div className="font-medium text-gray-900 dark:text-white">{car.dealerName}</div>
                         <div className="text-xs">{car.dealerCode}</div>
                     </td>
@@ -150,7 +150,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, onSort, sor
                         <div id={`car-model-${car.id}`} className="font-medium text-gray-900 dark:text-white">{car.model}</div>
                         <div className="text-xs">{car.color}</div>
                     </td>
-                    <td className={`${tdClasses} whitespace-normal text-xs font-mono min-w-[240px]`}>
+                    <td className={`${tdClasses} text-xs font-mono min-w-[240px]`}>
                       <IdentifierRow label="VIN" value={car.vin} />
                       <IdentifierRow label="Engine" value={car.engineNo} />
                       <IdentifierRow label="F.Motor" value={car.frontMotorNo} />
