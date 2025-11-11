@@ -15,11 +15,14 @@ function getPool(): Pool {
 
 export async function sql(query: string, params: any[] = []) {
   const dbPool = getPool();
-  const client = await dbPool.connect();
+  let client;
   try {
+    client = await dbPool.connect();
     const result = await client.query(query, params);
     return result;
   } finally {
-    client.release();
+    if (client) {
+      client.release();
+    }
   }
 }
