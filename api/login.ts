@@ -3,6 +3,13 @@ import { sql } from '../lib/db';
 import { signToken } from '../lib/auth';
 
 export default async (req: VercelRequest, res: VercelResponse) => {
+  // Explicitly check for environment variables at the start.
+  // A missing variable here can cause a crash before the try/catch block is effective.
+  if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
+      console.error('[API Login] Server Configuration Error: Missing DATABASE_URL or JWT_SECRET.');
+      return res.status(500).json({ message: 'Server configuration error. Please contact an administrator.' });
+  }
+
   try {
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
