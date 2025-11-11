@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { UserIcon, LockClosedIcon } from '../components/icons';
 
-const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  logo: string | null;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ logo }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -27,12 +31,16 @@ const LoginPage: React.FC = () => {
       <div className="w-full max-w-md mx-auto">
         <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full">
           <div className="flex justify-center mb-6">
-            <div className="p-1 bg-white rounded-md shadow-md">
-              <div className="w-40 h-16 border-2 border-gray-300 dark:border-gray-600 flex flex-row items-center justify-center bg-white dark:bg-gray-800 space-x-2">
-                <span className="font-bold text-gray-800 dark:text-gray-200 text-xl">PRIDE</span>
-                <span className="font-bold text-gray-800 dark:text-gray-200 text-xl">AUTO</span>
-              </div>
-            </div>
+             {logo ? (
+                <img src={logo} alt="Company Logo" className="max-h-20 object-contain" />
+              ) : (
+                <div className="p-1 bg-white rounded-md shadow-md">
+                  <div className="w-40 h-16 border-2 border-gray-300 dark:border-gray-600 flex flex-row items-center justify-center bg-white dark:bg-gray-800 space-x-2">
+                    <span className="font-bold text-gray-800 dark:text-gray-200 text-xl">PRIDE</span>
+                    <span className="font-bold text-gray-800 dark:text-gray-200 text-xl">AUTO</span>
+                  </div>
+                </div>
+              )}
           </div>
 
           <div className="text-center mb-8">

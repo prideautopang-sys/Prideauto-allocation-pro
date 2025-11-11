@@ -17,10 +17,11 @@ import MultiSelectFilter from './components/MultiSelectFilter';
 import UserManagementPage from './pages/UserManagementPage';
 import SalespersonManagementPage from './pages/SalespersonManagementPage';
 import SettingsPage from './pages/SettingsPage';
+import LogoManagementPage from './pages/LogoManagementPage';
 
 
 type SortableKeys = keyof Car;
-type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons';
+type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons' | 'logo';
 
 // UPDATE: Changed single-select filters to string arrays for multi-select functionality.
 interface Filters {
@@ -57,6 +58,7 @@ const App: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [salespersons, setSalespersons] = useState<Salesperson[]>([]);
   const [allSalespersons, setAllSalespersons] = useState<Salesperson[]>([]);
+  const [logo, setLogo] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +88,20 @@ const App: React.FC = () => {
     key: 'allocationDate', direction: 'descending',
   });
     
+  const fetchLogo = useCallback(async () => {
+    try {
+        const res = await fetch('/api/assets/logo');
+        if (res.ok) {
+            const data = await res.json();
+            if (data.logo) {
+                setLogo(data.logo);
+            }
+        }
+    } catch (err) {
+        console.error("Failed to fetch logo", err);
+    }
+  }, []);
+
   const fetchData = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
@@ -128,8 +144,13 @@ const App: React.FC = () => {
   }, [token, user?.role]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchLogo();
+    if (token) {
+        fetchData();
+    } else if (!isAuthLoading) {
+        setIsLoading(false);
+    }
+  }, [fetchData, fetchLogo, token, isAuthLoading]);
 
   // Car CRUD
   const handleOpenAddCarModal = () => {
@@ -518,7 +539,7 @@ const App: React.FC = () => {
   }
   
   if (!user) {
-    return <LoginPage />;
+    return <LoginPage logo={logo} />;
   }
 
   const renderContent = () => {
@@ -553,6 +574,11 @@ const App: React.FC = () => {
           return <SalespersonManagementPage token={token} salespersons={allSalespersons} onDataChange={fetchData} onBack={() => setActiveView('settings')} />;
         }
         return null;
+      case 'logo':
+        if (user.role === 'executive') {
+          return <LogoManagementPage token={token} currentLogo={logo} onLogoUpdate={fetchLogo} onBack={() => setActiveView('settings')} />;
+        }
+        return null;
       default:
         return null;
     }
@@ -567,6 +593,7 @@ const App: React.FC = () => {
       case 'settings': return `Settings`;
       case 'users': return `User Management`;
       case 'salespersons': return `Salesperson Management`;
+      case 'logo': return `Logo Management`;
       default: return '';
     }
   };
@@ -578,10 +605,14 @@ const App: React.FC = () => {
         <div className="py-4 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between">
                  <div className="flex items-center space-x-3">
-                    <div className="flex flex-row items-baseline justify-center space-x-1.5">
-                        <span className="font-bold text-gray-800 dark:text-gray-200 text-2xl">PRIDE</span>
-                        <span className="font-bold text-gray-800 dark:text-gray-200 text-2xl">AUTO</span>
-                    </div>
+                    {logo ? (
+                        <img src={logo} alt="Company Logo" className="h-10 object-contain" />
+                    ) : (
+                        <div className="flex flex-row items-baseline justify-center space-x-1.5">
+                            <span className="font-bold text-gray-800 dark:text-gray-200 text-2xl">PRIDE</span>
+                            <span className="font-bold text-gray-800 dark:text-gray-200 text-2xl">AUTO</span>
+                        </div>
+                    )}
                 </div>
                 <div className="flex items-center space-x-2">
                     {user.role !== 'user' && (
