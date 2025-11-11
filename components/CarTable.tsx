@@ -84,6 +84,13 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, vi
                           <div className="text-xs text-gray-400 dark:text-gray-500">{car.dealerCode} | Mahasarakham</div>
                           <div className="font-semibold text-gray-700 dark:text-gray-300 mt-2">{car.model}</div>
                           <div className="text-sm">{car.color}</div>
+                          {match && (
+                              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400">ข้อมูลการจอง</h4>
+                                  <div className="text-sm font-medium text-gray-800 dark:text-white">ลูกค้า: {match.customerName}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">เซลล์: {match.salesperson}</div>
+                              </div>
+                          )}
                       </div>
 
                       {/* Vehicle Identifiers */}
