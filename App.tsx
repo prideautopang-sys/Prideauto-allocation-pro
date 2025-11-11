@@ -11,7 +11,7 @@ import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ConfirmMatchDeleteModal from './components/ConfirmMatchDeleteModal';
 import MultiSelectFilter from './components/MultiSelectFilter';
 import StatisticsPage from './components/StatisticsPage';
-import { PlusIcon, ClipboardPlusIcon, CarIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon } from './components/icons';
+import { PlusIcon, ClipboardPlusIcon, CarIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon, CalendarIcon } from './components/icons';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 
@@ -46,18 +46,23 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeView, setActiveView] = useState<View>('allocation');
   
-  const [filters, setFilters] = useState<Record<FilterKeys, string[]>>({
-    dealerCode: [], model: [], color: [], carType: [], poType: [], stockLocation: [], status: [],
-  });
-  
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  // Filters
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [stagedSearchTerm, setStagedSearchTerm] = useState('');
+  const [stagedStatus, setStagedStatus] = useState('All');
+  const [stagedAllocationType, setStagedAllocationType] = useState('All');
+  const [stagedDate, setStagedDate] = useState('');
+
+  // Active Filters
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
+  const [activeStatus, setActiveStatus] = useState('All');
+  const [activeAllocationType, setActiveAllocationType] = useState('All');
+  const [activeDate, setActiveDate] = useState('');
 
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' }>({
     key: 'allocationDate', direction: 'descending',
   });
-  
-  const [selectedCarIds, setSelectedCarIds] = useState<string[]>([]);
-  
+    
   const fetchData = useCallback(async () => {
     if (!token) return;
     setIsLoading(true);
@@ -84,10 +89,6 @@ const App: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  useEffect(() => {
-    setSelectedCarIds([]);
-  }, [activeView]);
 
   // Car CRUD
   const handleOpenAddCarModal = () => {
@@ -263,8 +264,6 @@ const App: React.FC = () => {
   };
 
   const handleImportCars = async (newCars: Car[]) => {
-    // This now needs to be a series of API calls.
-    // For simplicity, let's do them one by one. A batch endpoint would be better for performance.
     let successCount = 0;
     let duplicateCount = 0;
 
@@ -276,7 +275,7 @@ const App: React.FC = () => {
         });
         if (response.ok) {
             successCount++;
-        } else if (response.status === 409) { // VIN conflict
+        } else if (response.status === 409) {
             duplicateCount++;
         }
     }
@@ -294,7 +293,6 @@ const App: React.FC = () => {
   };
   
   const handleAddFromAllocation = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์') => {
-      // Batch update cars
       const updatePromises = cars
         .filter(car => carIds.includes(car.id))
         .map(car => {
@@ -316,40 +314,23 @@ const App: React.FC = () => {
     };
 
   // Filtering and Sorting
-  const uniqueFilterValues = useMemo(() => {
-    const currentCars = activeView === 'stock' ? cars.filter(c => c.stockInDate) : cars;
-    return {
-      dealerCode: [...new Set(currentCars.map(c => c.dealerCode))].sort(),
-      model: [...new Set(currentCars.map(c => c.model))].sort(),
-      color: [...new Set(currentCars.map(c => c.color))].sort(),
-      carType: [...new Set(currentCars.map(c => c.carType).filter(Boolean))].sort(),
-      poType: [...new Set(currentCars.map(c => c.poType).filter(Boolean))].sort(),
-      status: [...new Set(currentCars.map(c => c.status).filter(Boolean))].sort(),
-      stockLocation: [...new Set(currentCars.map(c => c.stockLocation).filter(Boolean) as ('มหาสารคาม' | 'กาฬสินธุ์')[])].sort(),
-    };
-  }, [cars, activeView]);
-  
-  const handleFilterChange = (filterKey: FilterKeys, value: string[]) => {
-      setFilters(prev => ({ ...prev, [filterKey]: value }));
-  };
+  const handleApplyFilters = () => {
+    setActiveSearchTerm(stagedSearchTerm);
+    setActiveStatus(stagedStatus);
+    setActiveAllocationType(stagedAllocationType);
+    setActiveDate(stagedDate);
+  }
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setDateRange(prev => ({ ...prev, [name]: value }));
-  };
-
-  const clearFilters = () => {
-      setSearchTerm('');
-      setFilters({ dealerCode: [], model: [], color: [], carType: [], poType: [], stockLocation: [], status: [] });
-      setDateRange({ start: '', end: '' });
-  };
-
-  const handleSort = (key: SortableKeys) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
+  const handleClearFilters = () => {
+      setStagedSearchTerm('');
+      setStagedStatus('All');
+      setStagedAllocationType('All');
+      setStagedDate('');
+      
+      setActiveSearchTerm('');
+      setActiveStatus('All');
+      setActiveAllocationType('All');
+      setActiveDate('');
   };
 
   // Memoized Data for Views
@@ -362,7 +343,7 @@ const App: React.FC = () => {
     return soldCars.map(car => ({
       car,
       match: matchesByCarId.get(car.id)
-    })).filter(item => item.match); // Ensure we only show sold cars that have a match
+    })).filter(item => item.match);
   }, [soldCars, matches]);
   
   const carsNotInStock = useMemo(() => cars.filter(car => !car.stockInDate), [cars]);
@@ -373,30 +354,18 @@ const App: React.FC = () => {
     const sourceCars = activeView === 'stock' ? stockCars : allocatedCars;
     
     let filtered = sourceCars.filter(car => {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = (
+      const searchLower = activeSearchTerm.toLowerCase();
+      const matchesSearch = activeSearchTerm ? (
         Object.values(car).some(val => String(val).toLowerCase().includes(searchLower))
-      );
+      ) : true;
 
-      const matchesFilters = (Object.keys(filters) as FilterKeys[]).every(key => {
-          const filterValues = filters[key];
-          if (filterValues.length === 0) return true;
-          return filterValues.includes(car[key as keyof Car] as string);
-      });
+      const matchesStatus = activeStatus === 'All' || car.status === activeStatus;
+      const matchesAllocationType = activeAllocationType === 'All' || car.poType === activeAllocationType;
 
       const dateFieldToFilter = activeView === 'stock' ? car.stockInDate : car.allocationDate;
-      const matchesDateRange = (() => {
-        if (!dateRange.start && !dateRange.end || !dateFieldToFilter) return true;
-        const carDate = dateFieldToFilter;
-        const startDate = dateRange.start;
-        const endDate = dateRange.end;
-        if (startDate && endDate) return carDate >= startDate && carDate <= endDate;
-        if (startDate) return carDate >= startDate;
-        if (endDate) return carDate <= endDate;
-        return true;
-    })();
+      const matchesDate = !activeDate || (dateFieldToFilter && dateFieldToFilter.startsWith(activeDate));
 
-      return matchesSearch && matchesFilters && matchesDateRange;
+      return matchesSearch && matchesStatus && matchesAllocationType && matchesDate;
     });
 
     const { key, direction } = sortConfig;
@@ -417,26 +386,8 @@ const App: React.FC = () => {
         return direction === 'ascending' ? comparison : -comparison;
     });
     return filtered;
-  }, [allocatedCars, stockCars, searchTerm, filters, sortConfig, dateRange, activeView]);
+  }, [allocatedCars, stockCars, activeSearchTerm, activeStatus, activeAllocationType, activeDate, sortConfig, activeView]);
   
-  const handleToggleSelectCar = (carId: string) => {
-      setSelectedCarIds(prev =>
-          prev.includes(carId)
-              ? prev.filter(id => id !== carId)
-              : [...prev, carId]
-      );
-  };
-
-  const handleToggleSelectAll = () => {
-      const processedCarIds = processedCars.map(c => c.id);
-      const allSelectedOnPage = processedCarIds.length > 0 && processedCarIds.every(id => selectedCarIds.includes(id));
-
-      if (allSelectedOnPage) {
-          setSelectedCarIds(prev => prev.filter(id => !processedCarIds.includes(id)));
-      } else {
-          setSelectedCarIds(prev => [...new Set([...prev, ...processedCarIds])]);
-      }
-  };
 
   const stats = useMemo(() => {
     const carStats = cars.reduce((acc, car) => {
@@ -480,31 +431,35 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-      <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-30">
-        <div className="py-3 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center space-x-2 text-sky-600 dark:text-sky-400">
-               <CarIcon />
-               <h1 className="text-xl font-bold text-gray-900 dark:text-white">Car Allocation</h1>
-          </div>
-           <div className="flex items-center space-x-2">
-                {user.role !== 'user' && (activeView === 'allocation' || activeView === 'stock') && (
-                  <>
-                  <button
-                      onClick={() => setIsImportModalOpen(true)}
-                      className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-                  >
-                      <ClipboardPlusIcon /> <span className="ml-2 hidden sm:block">นำเข้า Excel</span>
-                  </button>
-                  <button
-                    onClick={handleOpenAddCarModal}
-                    className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-                  >
-                    <PlusIcon /> <span className="ml-2 hidden sm:block">เพิ่มรถใหม่</span>
-                  </button>
-                  </>
-                )}
-                 <button onClick={logout} className="text-sm font-medium text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white ml-4">Logout</button>
-           </div>
+      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
+        <div className="py-4 px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+                 <div className="flex items-center space-x-3">
+                    <div className="text-sky-600 dark:text-sky-400">
+                        <CarIcon />
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Car Allocation</h1>
+                </div>
+                <div className="flex items-center space-x-2">
+                    {user.role !== 'user' && (
+                    <>
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+                    >
+                        <ClipboardPlusIcon /> <span className="ml-2 hidden sm:block">Import Excel</span>
+                    </button>
+                    <button
+                        onClick={handleOpenAddCarModal}
+                        className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+                    >
+                        <PlusIcon /> <span className="ml-2 hidden sm:block">Add New Car</span>
+                    </button>
+                    </>
+                    )}
+                    <button onClick={logout} className="text-sm font-medium text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white ml-2 sm:ml-4">Logout</button>
+                </div>
+            </div>
         </div>
          <nav className="px-4 sm:px-6 lg:px-8 border-t border-gray-200 dark:border-gray-700">
             <div className="flex space-x-2 py-2 overflow-x-auto">
@@ -522,67 +477,70 @@ const App: React.FC = () => {
               <>
               {(activeView === 'allocation' || activeView === 'stock') && (
                 <>
-                <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="md:col-span-3">
-                          <input type="text" placeholder="ค้นหา..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                              className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          />
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
-                          <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{activeView === 'stock' ? 'Stock-in Date (From)' : 'Allocation Date (From)'}</label>
-                              <input type="date" name="start" value={dateRange.start} onChange={handleDateChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                          </div>
-                           <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{activeView === 'stock' ? 'Stock-in Date (To)' : 'Allocation Date (To)'}</label>
-                              <input type="date" name="end" value={dateRange.end} onChange={handleDateChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                          </div>
-                          {['dealerCode', 'model', 'color', 'carType', 'poType', 'status'].map(key => (
-                             <div key={key}>
-                                  <MultiSelectFilter label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} options={uniqueFilterValues[key as FilterKeys]} selectedOptions={filters[key as FilterKeys]} onChange={(selected) => handleFilterChange(key as FilterKeys, selected)} />
+                <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                    {/* Main Filter Controls */}
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        {/* Search Input */}
+                        <div className="lg:col-span-2">
+                             <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+                             <input type="text" name="search" id="search" placeholder="VIN, Dealer, Model..." value={stagedSearchTerm} onChange={(e) => setStagedSearchTerm(e.target.value)}
+                                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            />
+                        </div>
+                        {/* Status Filter */}
+                        <div>
+                             <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                             <select id="status" name="status" value={stagedStatus} onChange={e => setStagedStatus(e.target.value)} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option>All</option>
+                                {Object.values(CarStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                        </div>
+                        {/* Allocation Type Filter */}
+                        <div>
+                             <label htmlFor="allocationType" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Allocation Type</label>
+                             <select id="allocationType" name="allocationType" value={stagedAllocationType} onChange={e => setStagedAllocationType(e.target.value)} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option>All</option>
+                                {[...new Set(cars.map(c => c.poType).filter(Boolean))].map(pt => <option key={pt} value={pt}>{pt}</option>)}
+                            </select>
+                        </div>
+                         {/* Date Range Filter */}
+                        <div className="relative">
+                             <label htmlFor="dateRange" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
+                             <div className="relative mt-1">
+                                <input type="date" name="dateRange" id="dateRange" value={stagedDate} onChange={e => setStagedDate(e.target.value)} className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 pl-3 pr-10 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <CalendarIcon/>
+                                </div>
                              </div>
-                          ))}
-                          {activeView === 'stock' && (
-                              <div>
-                                  <MultiSelectFilter label="Stock Location" options={uniqueFilterValues.stockLocation} selectedOptions={filters.stockLocation} onChange={(selected) => handleFilterChange('stockLocation', selected)} />
-                              </div>
-                          )}
                         </div>
-                        <div className="mt-4 flex justify-end">
-                            <button onClick={clearFilters} className="text-sm font-medium text-sky-600 hover:text-sky-500 dark:text-sky-400 dark:hover:text-sky-300">
-                              ล้างตัวกรองทั้งหมด
-                            </button>
-                        </div>
-                    </div>
+                     </div>
+                     {/* Action Buttons */}
+                     <div className="mt-4 flex justify-end space-x-2">
+                        <button onClick={handleApplyFilters} className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
+                            <FilterIcon/> <span className="ml-2">Apply Filters</span>
+                        </button>
+                        <button onClick={handleClearFilters} className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
+                           Clear
+                        </button>
+                     </div>
                 </div>
 
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300">
-                      {activeView === 'stock' ? `รถในสต็อก (${processedCars.length})` : `รถรอจัดสรร (${processedCars.length})`}
-                  </h2>
-                  {activeView === 'stock' && user.role !== 'user' && (
-                      <button
-                          onClick={() => setIsAddFromAllocationModalOpen(true)}
-                          className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-                      >
-                          <PlusIcon /> <span className="ml-2 hidden sm:block">เพิ่มรถเข้าสต็อก</span>
-                      </button>
+                {activeView === 'stock' && user.role !== 'user' && (
+                      <div className="mb-4 flex justify-end">
+                        <button
+                            onClick={() => setIsAddFromAllocationModalOpen(true)}
+                            className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                        >
+                            <PlusIcon /> <span className="ml-2 hidden sm:block">เพิ่มรถเข้าสต็อก</span>
+                        </button>
+                      </div>
                   )}
-                </div>
       
                 <CarTable 
                   cars={processedCars} 
                   onEdit={handleOpenEditCarModal}
                   onDelete={handleDeleteRequest}
-                  onSort={handleSort}
-                  sortConfig={sortConfig}
                   view={activeView}
-                  selectedCarIds={selectedCarIds}
-                  onSelectCar={handleToggleSelectCar}
-                  onSelectAll={handleToggleSelectAll}
                   userRole={user.role}
                 />
                 </>
