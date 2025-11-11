@@ -32,6 +32,7 @@ interface Filters {
   carType: string;
   poType: string;
   stockLocation: string;
+  matchStatus: string;
 }
 
 const initialFilters: Filters = {
@@ -44,6 +45,7 @@ const initialFilters: Filters = {
   carType: 'All',
   poType: 'All',
   stockLocation: 'All',
+  matchStatus: 'All',
 };
 
 const App: React.FC = () => {
@@ -409,7 +411,7 @@ const App: React.FC = () => {
     else return [];
 
     let filtered = sourceCars.filter(car => {
-      const { searchTerm, startDate, endDate, dealerCode, model, color, carType, poType, stockLocation } = activeFilters;
+      const { searchTerm, startDate, endDate, dealerCode, model, color, carType, poType, stockLocation, matchStatus } = activeFilters;
       
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = searchTerm ? (
@@ -423,14 +425,19 @@ const App: React.FC = () => {
       const matchesPoType = poType === 'All' || car.poType === poType;
       const matchesStockLocation = (activeView === 'stock' || activeView === 'matching' || activeView === 'sold') ? (stockLocation === 'All' || car.stockLocation === stockLocation) : true;
       
+      const match = matches.find(m => m.carId === car.id);
+      const matchesMatchStatus = (activeView === 'matching')
+        ? (matchStatus === 'All' || (match && match.status === matchStatus))
+        : true;
+
       let matchesDate = true;
       if (startDate || endDate) {
           let dateField: string | undefined;
           if (activeView === 'allocation') dateField = car.allocationDate;
           if (activeView === 'stock' || activeView === 'matching') dateField = car.stockInDate;
           if (activeView === 'sold') {
-            const match = matches.find(m => m.carId === car.id);
-            dateField = match?.saleDate;
+            const saleMatch = matches.find(m => m.carId === car.id);
+            dateField = saleMatch?.saleDate;
           }
 
           if (!dateField) {
@@ -446,7 +453,7 @@ const App: React.FC = () => {
           }
       }
 
-      return matchesSearch && matchesDealer && matchesModel && matchesColor && matchesCarType && matchesPoType && matchesStockLocation && matchesDate;
+      return matchesSearch && matchesDealer && matchesModel && matchesColor && matchesCarType && matchesPoType && matchesStockLocation && matchesDate && matchesMatchStatus;
     });
 
     const { key, direction } = sortConfig;
@@ -692,6 +699,13 @@ const App: React.FC = () => {
                            {(activeView === 'stock' || activeView === 'matching' || activeView === 'sold') && (
                               <FilterDropdown label="สาขาที่ Stock" name="stockLocation" options={filterOptions.stockLocations} />
                           )}
+                           {activeView === 'matching' && (
+                                <FilterDropdown 
+                                    label="สถานะการจอง" 
+                                    name="matchStatus" 
+                                    options={Object.values(MatchStatus)} 
+                                />
+                            )}
                       </div>
                       <div className="mt-4 flex justify-end space-x-2">
                           <button onClick={handleApplyFilters} className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
