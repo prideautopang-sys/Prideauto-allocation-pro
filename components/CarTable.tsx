@@ -65,6 +65,11 @@ const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, view, userR
                       <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center font-bold text-gray-500 dark:text-gray-400 text-lg">{index + 1}</div>
                       <div className="ml-4">
                         <div className="font-medium text-gray-900 dark:text-white">{formatDate(car.allocationDate)}</div>
+                        {car.stockInDate && (
+                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                Stock: {formatDate(car.stockInDate)}
+                            </div>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -90,7 +95,14 @@ const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, view, userR
                     {car.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                    <td className="px-3 py-4 text-sm text-gray-500 dark:text-gray-400 align-top">
-                    <StatusBadge status={car.status} />
+                     <div className="flex flex-col items-start space-y-1">
+                        <StatusBadge status={car.status} />
+                        {car.stockLocation && (
+                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
+                                สาขา: {car.stockLocation}
+                            </div>
+                        )}
+                      </div>
                   </td>
                   {canEdit && 
                     <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 align-top">
