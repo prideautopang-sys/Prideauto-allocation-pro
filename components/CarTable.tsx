@@ -138,7 +138,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                       <div className="col-span-1">
                         <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Price</h4>
                         <div className="font-bold text-gray-800 dark:text-white">
-                            {car.price.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {Number(car.price).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                       </div>
                       
