@@ -5,8 +5,14 @@ import { Match } from '../../types';
 
 const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
     const { id } = req.query;
+    const userRole = req.user?.role;
+
     if (typeof id !== 'string') {
         return res.status(400).json({ message: 'Invalid match ID' });
+    }
+
+    if (userRole !== 'executive' && userRole !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions to manage matches.' });
     }
 
     // PUT (Update) a match
@@ -20,7 +26,7 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
             const query = `
                 UPDATE matches SET 
                     car_id = $1, customer_name = $2, salesperson = $3, sale_date = $4, 
-                    status = $5, license_plate = $6, notes = $7
+                    status = $5, license_plate = $6, notes = $7, updated_at = NOW()
                 WHERE id = $8
                 RETURNING *;
             `;
@@ -54,4 +60,4 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
     return res.status(405).json({ message: 'Method Not Allowed' });
 };
 
-export default withAuth(handler, ['executive', 'admin']);
+export default withAuth(handler);

@@ -7,7 +7,13 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
   // GET all matches
   if (req.method === 'GET') {
     try {
-      const { rows } = await sql('SELECT * FROM matches ORDER BY sale_date DESC');
+      // Map snake_case to camelCase
+      const { rows } = await sql(`
+        SELECT
+          id, car_id as "carId", customer_name as "customerName", salesperson,
+          sale_date as "saleDate", status, license_plate as "licensePlate", notes
+        FROM matches ORDER BY created_at DESC
+      `);
       return res.status(200).json(rows);
     } catch (error) {
       console.error('Error fetching matches:', error);
@@ -17,6 +23,10 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
 
   // POST a new match
   if (req.method === 'POST') {
+    const userRole = req.user?.role;
+    if (userRole !== 'executive' && userRole !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions to create a match.' });
+    }
     try {
       const { 
           carId, customerName, salesperson, saleDate,
@@ -46,4 +56,4 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
   return res.status(405).json({ message: 'Method Not Allowed' });
 };
 
-export default withAuth(handler, ['executive', 'admin']);
+export default withAuth(handler);

@@ -7,7 +7,16 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
   // GET all cars
   if (req.method === 'GET') {
     try {
-      const { rows } = await sql('SELECT * FROM cars ORDER BY allocation_date DESC');
+      // The snake_case columns from DB need to be mapped to camelCase for the frontend
+      const { rows } = await sql(`
+        SELECT 
+          id, dealer_code as "dealerCode", dealer_name as "dealerName", model, vin, 
+          front_motor_no as "frontMotorNo", rear_motor_no as "rearMotorNo", 
+          battery_no as "batteryNo", engine_no as "engineNo", color, car_type as "carType", 
+          allocation_date as "allocationDate", po_type as "poType", price, status, 
+          stock_in_date as "stockInDate", stock_location as "stockLocation"
+        FROM cars ORDER BY allocation_date DESC
+      `);
       return res.status(200).json(rows);
     } catch (error) {
       console.error('Error fetching cars:', error);
@@ -17,6 +26,12 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
 
   // POST a new car
   if (req.method === 'POST') {
+    // Role-based access control inside the handler
+    const userRole = req.user?.role;
+    if (userRole !== 'executive' && userRole !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden: Insufficient permissions to create a car.' });
+    }
+    
     try {
       const { 
           dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
@@ -57,5 +72,5 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
   return res.status(405).json({ message: 'Method Not Allowed' });
 };
 
-// Protect GET for all logged-in users, and POST for admin/executive
-export default withAuth(handler, ['executive', 'admin']);
+// Protect endpoint for all authenticated users; role checks are done inside the handler.
+export default withAuth(handler);

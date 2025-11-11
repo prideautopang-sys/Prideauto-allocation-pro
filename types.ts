@@ -1,6 +1,6 @@
 
 export interface Car {
-  id: string;
+  id?: string;
   dealerCode: string;
   dealerName: string;
   model: string;
@@ -36,7 +36,7 @@ export enum MatchStatus {
 }
 
 export interface Match {
-  id: string;
+  id?: string;
   carId: string;
   customerName: string;
   salesperson: string;

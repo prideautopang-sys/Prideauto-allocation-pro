@@ -10,7 +10,8 @@ export interface AuthenticatedRequest extends VercelRequest {
   };
 }
 
-type ApiHandler = (req: AuthenticatedRequest, res: VercelResponse) => Promise<void>;
+// FIX: The ApiHandler type was too strict (Promise<void>). Changed to Promise<any> to accommodate handlers that return the VercelResponse object (e.g., `return res.json(...)`).
+type ApiHandler = (req: AuthenticatedRequest, res: VercelResponse) => Promise<any>;
 
 export const withAuth = (handler: ApiHandler, requiredRoles: Role[] = []) => {
   // FIX: The function returned by the middleware should accept a standard VercelRequest,
