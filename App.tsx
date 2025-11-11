@@ -9,7 +9,6 @@ import ImportModal from './components/ImportModal';
 import AddFromAllocationModal from './components/AddFromAllocationModal';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ConfirmMatchDeleteModal from './components/ConfirmMatchDeleteModal';
-import MultiSelectFilter from './components/MultiSelectFilter';
 import StatisticsPage from './components/StatisticsPage';
 import { PlusIcon, ClipboardPlusIcon, CarIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon, CalendarIcon } from './components/icons';
 import { useAuth } from './hooks/useAuth';
@@ -17,9 +16,31 @@ import LoginPage from './pages/LoginPage';
 
 
 type SortableKeys = keyof Car;
-type FilterKeys = 'dealerCode' | 'model' | 'color' | 'carType' | 'poType' | 'stockLocation' | 'status';
 type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold';
 
+interface Filters {
+  searchTerm: string;
+  startDate: string;
+  endDate: string;
+  dealerCode: string;
+  model: string;
+  color: string;
+  carType: string;
+  poType: string;
+  stockLocation: string;
+}
+
+const initialFilters: Filters = {
+  searchTerm: '',
+  startDate: '',
+  endDate: '',
+  dealerCode: 'All',
+  model: 'All',
+  color: 'All',
+  carType: 'All',
+  poType: 'All',
+  stockLocation: 'All',
+};
 
 const App: React.FC = () => {
   const { user, token, logout, isLoading: isAuthLoading } = useAuth();
@@ -47,16 +68,8 @@ const App: React.FC = () => {
   
   // Filters
   const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [stagedSearchTerm, setStagedSearchTerm] = useState('');
-  const [stagedStatus, setStagedStatus] = useState('All');
-  const [stagedAllocationType, setStagedAllocationType] = useState('All');
-  const [stagedDate, setStagedDate] = useState('');
-
-  // Active Filters
-  const [activeSearchTerm, setActiveSearchTerm] = useState('');
-  const [activeStatus, setActiveStatus] = useState('All');
-  const [activeAllocationType, setActiveAllocationType] = useState('All');
-  const [activeDate, setActiveDate] = useState('');
+  const [stagedFilters, setStagedFilters] = useState<Filters>(initialFilters);
+  const [activeFilters, setActiveFilters] = useState<Filters>(initialFilters);
 
   const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' }>({
     key: 'allocationDate', direction: 'descending',
@@ -293,7 +306,7 @@ const App: React.FC = () => {
   
   const handleAddFromAllocation = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์') => {
       const updatePromises = cars
-        .filter(car => carIds.includes(car.id))
+        .filter(car => carIds.includes(car.id!))
         .map(car => {
           const updatedCar = { ...car, stockInDate, stockLocation, status: CarStatus.IN_STOCK };
           return fetch(`/api/cars/${car.id}`, {
@@ -313,24 +326,32 @@ const App: React.FC = () => {
     };
 
   // Filtering and Sorting
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setStagedFilters(prev => ({ ...prev, [name]: value }));
+  };
+  
   const handleApplyFilters = () => {
-    setActiveSearchTerm(stagedSearchTerm);
-    setActiveStatus(stagedStatus);
-    setActiveAllocationType(stagedAllocationType);
-    setActiveDate(stagedDate);
+    setActiveFilters(stagedFilters);
   }
 
   const handleClearFilters = () => {
-      setStagedSearchTerm('');
-      setStagedStatus('All');
-      setStagedAllocationType('All');
-      setStagedDate('');
-      
-      setActiveSearchTerm('');
-      setActiveStatus('All');
-      setActiveAllocationType('All');
-      setActiveDate('');
+      setStagedFilters(initialFilters);
+      setActiveFilters(initialFilters);
   };
+
+  const filterOptions = useMemo(() => {
+    const unique = (key: keyof Car) => [...new Set(cars.map(c => c[key]).filter(Boolean))] as string[];
+    return {
+        dealerCodes: unique('dealerCode'),
+        models: unique('model'),
+        colors: unique('color'),
+        carTypes: unique('carType'),
+        poTypes: unique('poType'),
+        stockLocations: unique('stockLocation'),
+    };
+  }, [cars]);
+
 
   // Memoized Data for Views
   const allocatedCars = useMemo(() => cars, [cars]);
@@ -341,7 +362,7 @@ const App: React.FC = () => {
     const matchesByCarId = new Map(matches.map(m => [m.carId, m]));
     return soldCars.map(car => ({
       car,
-      match: matchesByCarId.get(car.id)
+      match: matchesByCarId.get(car.id!)
     })).filter(item => item.match);
   }, [soldCars, matches]);
   
@@ -353,18 +374,37 @@ const App: React.FC = () => {
     const sourceCars = activeView === 'stock' ? stockCars : allocatedCars;
     
     let filtered = sourceCars.filter(car => {
-      const searchLower = activeSearchTerm.toLowerCase();
-      const matchesSearch = activeSearchTerm ? (
+      const { searchTerm, startDate, endDate, dealerCode, model, color, carType, poType, stockLocation } = activeFilters;
+      
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = searchTerm ? (
         Object.values(car).some(val => String(val).toLowerCase().includes(searchLower))
       ) : true;
 
-      const matchesStatus = activeStatus === 'All' || car.status === activeStatus;
-      const matchesAllocationType = activeAllocationType === 'All' || car.poType === activeAllocationType;
+      const matchesDealer = dealerCode === 'All' || car.dealerCode === dealerCode;
+      const matchesModel = model === 'All' || car.model === model;
+      const matchesColor = color === 'All' || car.color === color;
+      const matchesCarType = carType === 'All' || car.carType === carType;
+      const matchesPoType = poType === 'All' || car.poType === poType;
+      const matchesStockLocation = activeView === 'stock' ? (stockLocation === 'All' || car.stockLocation === stockLocation) : true;
+      
+      let matchesDate = true;
+      if (startDate || endDate) {
+          const dateField = activeView === 'stock' ? car.stockInDate : car.allocationDate;
+          if (!dateField) {
+              matchesDate = false;
+          } else {
+              const carDate = new Date(dateField);
+              carDate.setHours(0, 0, 0, 0); 
+              const start = startDate ? new Date(startDate) : null;
+              if (start) start.setHours(0, 0, 0, 0);
+              const end = endDate ? new Date(endDate) : null;
+              if (end) end.setHours(0, 0, 0, 0);
+              matchesDate = (!start || carDate >= start) && (!end || carDate <= end);
+          }
+      }
 
-      const dateFieldToFilter = activeView === 'stock' ? car.stockInDate : car.allocationDate;
-      const matchesDate = !activeDate || (dateFieldToFilter && dateFieldToFilter.startsWith(activeDate));
-
-      return matchesSearch && matchesStatus && matchesAllocationType && matchesDate;
+      return matchesSearch && matchesDealer && matchesModel && matchesColor && matchesCarType && matchesPoType && matchesStockLocation && matchesDate;
     });
 
     const { key, direction } = sortConfig;
@@ -385,7 +425,7 @@ const App: React.FC = () => {
         return direction === 'ascending' ? comparison : -comparison;
     });
     return filtered;
-  }, [allocatedCars, stockCars, activeSearchTerm, activeStatus, activeAllocationType, activeDate, sortConfig, activeView]);
+  }, [allocatedCars, stockCars, activeFilters, sortConfig, activeView]);
   
 
   const stats = useMemo(() => {
@@ -418,6 +458,22 @@ const App: React.FC = () => {
       {icon}
       <span>{label}</span>
     </button>
+  );
+
+  const FilterDropdown: React.FC<{ label: string; name: keyof Filters; options: string[] }> = ({ label, name, options }) => (
+    <div>
+        <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
+        <select 
+            id={name} 
+            name={name} 
+            value={stagedFilters[name] as string} 
+            onChange={handleFilterChange} 
+            className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        >
+            <option value="All">All</option>
+            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+    </div>
   );
   
   if (isAuthLoading) {
@@ -505,36 +561,29 @@ const App: React.FC = () => {
 
                 {isFilterVisible && (
                     <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                            <div className="lg:col-span-2">
-                                <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
-                                <input type="text" name="search" id="search" placeholder="VIN, Dealer, Model..." value={stagedSearchTerm} onChange={(e) => setStagedSearchTerm(e.target.value)}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            <div className="lg:col-span-2 xl:col-span-1">
+                                <label htmlFor="searchTerm" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+                                <input type="text" name="searchTerm" id="searchTerm" placeholder="VIN, Dealer, Model..." value={stagedFilters.searchTerm} onChange={handleFilterChange}
                                     className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 />
                             </div>
-                            <div>
-                                <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                                <select id="status" name="status" value={stagedStatus} onChange={e => setStagedStatus(e.target.value)} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                    <option>All</option>
-                                    {Object.values(CarStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label htmlFor="allocationType" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Allocation Type</label>
-                                <select id="allocationType" name="allocationType" value={stagedAllocationType} onChange={e => setStagedAllocationType(e.target.value)} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                    <option>All</option>
-                                    {[...new Set(cars.map(c => c.poType).filter(Boolean))].map(pt => <option key={pt} value={pt}>{pt}</option>)}
-                                </select>
+                            <div className="relative">
+                                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{activeView === 'stock' ? 'วันที่ Stock เริ่มต้น' : 'วันที่ Allocate เริ่มต้น'}</label>
+                                <input type="date" name="startDate" id="startDate" value={stagedFilters.startDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                             </div>
                             <div className="relative">
-                                <label htmlFor="dateRange" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
-                                <div className="relative mt-1">
-                                    <input type="date" name="dateRange" id="dateRange" value={stagedDate} onChange={e => setStagedDate(e.target.value)} className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 pl-3 pr-10 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                        <CalendarIcon/>
-                                    </div>
-                                </div>
+                                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{activeView === 'stock' ? 'วันที่ Stock สิ้นสุด' : 'วันที่ Allocate สิ้นสุด'}</label>
+                                <input type="date" name="endDate" id="endDate" value={stagedFilters.endDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                             </div>
+                            <FilterDropdown label="รหัส Dealer" name="dealerCode" options={filterOptions.dealerCodes} />
+                            <FilterDropdown label="รุ่นรถ" name="model" options={filterOptions.models} />
+                            <FilterDropdown label="สีรถ" name="color" options={filterOptions.colors} />
+                            <FilterDropdown label="Car Type" name="carType" options={filterOptions.carTypes} />
+                            <FilterDropdown label="PO Type" name="poType" options={filterOptions.poTypes} />
+                             {activeView === 'stock' && (
+                                <FilterDropdown label="สาขาที่ Stock" name="stockLocation" options={filterOptions.stockLocations} />
+                            )}
                         </div>
                         <div className="mt-4 flex justify-end space-x-2">
                             <button onClick={handleApplyFilters} className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">

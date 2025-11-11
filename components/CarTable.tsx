@@ -84,6 +84,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, onEdit, onDelete, view, userR
                         <IdentifierRow label="VIN" value={car.vin} />
                         <IdentifierRow label="Engine" value={car.engineNo} />
                         <IdentifierRow label="F.Motor" value={car.frontMotorNo} />
+                        <IdentifierRow label="R.Motor" value={car.rearMotorNo} />
                         <IdentifierRow label="Battery" value={car.batteryNo} />
                     </div>
                   </td>
