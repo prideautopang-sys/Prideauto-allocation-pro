@@ -35,6 +35,7 @@ interface Filters {
   poType: string[];
   stockLocation: string[];
   matchStatus: string[];
+  salesperson: string[];
 }
 
 // UPDATE: Changed initial filter values from 'All' to empty arrays for multi-select.
@@ -49,6 +50,7 @@ const initialFilters: Filters = {
   poType: [],
   stockLocation: [],
   matchStatus: [],
+  salesperson: [],
 };
 
 const App: React.FC = () => {
@@ -413,8 +415,9 @@ const App: React.FC = () => {
         carTypes: unique('carType'),
         poTypes: unique('poType'),
         stockLocations: unique('stockLocation'),
+        salespersons: [...new Set(allSalespersons.map(s => s.name))],
     };
-  }, [cars]);
+  }, [cars, allSalespersons]);
 
 
   // Memoized Data for Views
@@ -435,7 +438,7 @@ const App: React.FC = () => {
     else return [];
 
     let filtered = sourceCars.filter(car => {
-      const { searchTerm, startDate, endDate, dealerCode, model, color, carType, poType, stockLocation, matchStatus } = activeFilters;
+      const { searchTerm, startDate, endDate, dealerCode, model, color, carType, poType, stockLocation, matchStatus, salesperson } = activeFilters;
       
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = searchTerm ? (
@@ -453,6 +456,10 @@ const App: React.FC = () => {
       const match = matches.find(m => m.carId === car.id);
       const matchesMatchStatus = (activeView === 'matching')
         ? (matchStatus.length === 0 || (match && matchStatus.includes(match.status)))
+        : true;
+        
+      const matchesSalesperson = (activeView === 'sold')
+        ? (salesperson.length === 0 || (match && salesperson.includes(match.salesperson)))
         : true;
 
       let matchesDate = true;
@@ -478,7 +485,7 @@ const App: React.FC = () => {
           }
       }
 
-      return matchesSearch && matchesDealer && matchesModel && matchesColor && matchesCarType && matchesPoType && matchesStockLocation && matchesDate && matchesMatchStatus;
+      return matchesSearch && matchesDealer && matchesModel && matchesColor && matchesCarType && matchesPoType && matchesStockLocation && matchesDate && matchesMatchStatus && matchesSalesperson;
     });
 
     const { key, direction } = sortConfig;
@@ -710,6 +717,14 @@ const App: React.FC = () => {
                                     options={Object.values(MatchStatus)} 
                                     selectedOptions={stagedFilters.matchStatus}
                                     onChange={handleMultiSelectChange('matchStatus')}
+                                />
+                            )}
+                            {activeView === 'sold' && (
+                                <MultiSelectFilter 
+                                    label="เซลล์"
+                                    options={filterOptions.salespersons} 
+                                    selectedOptions={stagedFilters.salesperson}
+                                    onChange={handleMultiSelectChange('salesperson')}
                                 />
                             )}
                       </div>
