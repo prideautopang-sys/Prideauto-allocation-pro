@@ -219,6 +219,13 @@ const App: React.FC = () => {
     const url = isEditing ? `/api/matches/${match.id}` : '/api/matches';
     const method = isEditing ? 'PUT' : 'POST';
 
+    // FIX: Enforce that a saleDate is required when the status is DELIVERED.
+    // This prevents errors and ensures the car status is correctly updated to 'Sold'.
+    if (match.status === MatchStatus.DELIVERED && !match.saleDate) {
+      alert('กรุณาระบุ "วันที่ตัดขาย" เมื่อสถานะเป็น "รับรถแล้ว"');
+      return;
+    }
+
     try {
       // First, save the match
       const matchResponse = await fetch(url, {
@@ -631,7 +638,8 @@ const App: React.FC = () => {
                 )}
       
                 <CarTable 
-                  cars={processedCars} 
+                  cars={processedCars}
+                  matches={matches}
                   onEdit={handleOpenEditCarModal}
                   onDelete={handleDeleteRequest}
                   view={activeView}
