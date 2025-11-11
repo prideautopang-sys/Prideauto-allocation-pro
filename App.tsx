@@ -391,16 +391,9 @@ const App: React.FC = () => {
   // Memoized Data for Views
   const allocatedCars = useMemo(() => cars, [cars]);
   const stockCars = useMemo(() => cars.filter(car => car.stockInDate && car.status !== CarStatus.SOLD), [cars]);
+  const matchingCars = useMemo(() => cars.filter(car => car.status === CarStatus.RESERVED), [cars]);
   const soldCars = useMemo(() => cars.filter(car => car.status === CarStatus.SOLD), [cars]);
 
-  const soldData = useMemo(() => {
-    const matchesByCarId = new Map(matches.map(m => [m.carId, m]));
-    return soldCars.map(car => ({
-      car,
-      match: matchesByCarId.get(car.id!)
-    })).filter(item => item.match);
-  }, [soldCars, matches]);
-  
   const carsNotInStock = useMemo(() => cars.filter(car => !car.stockInDate), [cars]);
   const carsInStockForMatching = useMemo(() => cars.filter(c => c.status === CarStatus.IN_STOCK), [cars]);
 
@@ -519,6 +512,69 @@ const App: React.FC = () => {
     return <LoginPage />;
   }
 
+  const renderContent = () => {
+    switch(activeView) {
+      case 'allocation':
+      case 'stock':
+        return (
+          <CarTable 
+            cars={processedCars}
+            matches={matches}
+            onEdit={handleOpenEditCarModal}
+            onDelete={handleDeleteRequest}
+            view={activeView}
+            userRole={user.role}
+          />
+        );
+      case 'matching':
+        return (
+          <CarTable
+            cars={matchingCars}
+            matches={matches}
+            view="matching"
+            userRole={user.role}
+            onEditMatch={handleOpenEditMatchModal}
+            onDeleteMatch={handleDeleteMatchRequest}
+          />
+        );
+      case 'sold':
+        return (
+          <CarTable
+            cars={soldCars}
+            matches={matches}
+            view="sold"
+            userRole={user.role}
+            onEditMatch={handleOpenEditMatchModal}
+          />
+        );
+      case 'stats':
+        return <StatisticsPage stats={stats} />;
+      case 'users':
+        if (user.role === 'executive') {
+          return <UserManagementPage token={token} currentUser={user} />;
+        }
+        return null;
+      case 'salespersons':
+        if (user.role === 'executive') {
+          return <SalespersonManagementPage token={token} salespersons={allSalespersons} onDataChange={fetchData} />;
+        }
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  const getPageTitle = () => {
+    switch(activeView) {
+      case 'allocation': return `Car Allocation (${processedCars.length})`;
+      case 'stock': return `Stock (${processedCars.length})`;
+      case 'matching': return `Matching (${matchingCars.length})`;
+      case 'sold': return `Sold Cars (${soldCars.length})`;
+      default: return '';
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
       <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
@@ -555,7 +611,7 @@ const App: React.FC = () => {
             <div className="flex space-x-2 py-2 overflow-x-auto">
                 <NavButton view="allocation" label={`Car allocation (${allocatedCars.length})`} icon={<CollectionIcon className="h-5 w-5"/>} />
                 <NavButton view="stock" label={`Stock (${stockCars.length})`} icon={<ArchiveIcon className="h-5 w-5"/>} />
-                <NavButton view="matching" label={`Matching (${matches.length})`} icon={<LinkIcon />} />
+                <NavButton view="matching" label={`Matching (${matchingCars.length})`} icon={<LinkIcon />} />
                 <NavButton view="sold" label={`Sold Cars (${soldCars.length})`} icon={<ShoppingCartIcon />} />
                 <NavButton view="stats" label="Statistics" icon={<ChartBarIcon />} />
                 {user.role === 'executive' && (
@@ -571,89 +627,20 @@ const App: React.FC = () => {
       <main className="py-6 px-4 sm:px-6 lg:px-8">
             {isLoading ? <div className="text-center">Loading data...</div> : error ? <div className="text-center text-red-500">Error: {error}</div> : (
               <>
-              {(activeView === 'allocation' || activeView === 'stock') && (
-                <>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {activeView === 'allocation' ? `Car Allocation (${processedCars.length})` : `Stock (${processedCars.length})`}
-                    </h2>
-                    <div className="flex items-center gap-2">
-                        {activeView === 'stock' && user.role !== 'user' && (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {getPageTitle()}
+                  </h2>
+                  <div className="flex items-center gap-2">
+                      {activeView === 'stock' && user.role !== 'user' && (
                         <button
                             onClick={() => setIsAddFromAllocationModalOpen(true)}
                             className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                         >
                             <PlusIcon /> <span className="ml-2 hidden sm:block">เพิ่มรถเข้าสต็อก</span>
                         </button>
-                        )}
-                        <button 
-                        onClick={() => setIsFilterVisible(!isFilterVisible)}
-                        className={`inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 ${
-                            isFilterVisible 
-                            ? 'bg-sky-100 dark:bg-sky-800/50 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-200' 
-                            : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
-                        }`}
-                        >
-                        <FilterIcon/>
-                        <span className="ml-2">ตัวกรอง</span>
-                        </button>
-                    </div>
-                </div>
-
-                {isFilterVisible && (
-                    <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                            <div className="lg:col-span-2 xl:col-span-1">
-                                <label htmlFor="searchTerm" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
-                                <input type="text" name="searchTerm" id="searchTerm" placeholder="VIN, Dealer, Model..." value={stagedFilters.searchTerm} onChange={handleFilterChange}
-                                    className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                />
-                            </div>
-                            <div className="relative">
-                                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{activeView === 'stock' ? 'วันที่ Stock เริ่มต้น' : 'วันที่ Allocate เริ่มต้น'}</label>
-                                <input type="date" name="startDate" id="startDate" value={stagedFilters.startDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                            </div>
-                            <div className="relative">
-                                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{activeView === 'stock' ? 'วันที่ Stock สิ้นสุด' : 'วันที่ Allocate สิ้นสุด'}</label>
-                                <input type="date" name="endDate" id="endDate" value={stagedFilters.endDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                            </div>
-                            <FilterDropdown label="รหัส Dealer" name="dealerCode" options={filterOptions.dealerCodes} />
-                            <MultiSelectFilter label="รุ่นรถ" options={filterOptions.models} selectedOptions={stagedFilters.model} onChange={handleMultiSelectChange('model')} />
-                            <FilterDropdown label="สีรถ" name="color" options={filterOptions.colors} />
-                            <FilterDropdown label="Car Type" name="carType" options={filterOptions.carTypes} />
-                            <FilterDropdown label="PO Type" name="poType" options={filterOptions.poTypes} />
-                             {activeView === 'stock' && (
-                                <FilterDropdown label="สาขาที่ Stock" name="stockLocation" options={filterOptions.stockLocations} />
-                            )}
-                        </div>
-                        <div className="mt-4 flex justify-end space-x-2">
-                            <button onClick={handleApplyFilters} className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                                <FilterIcon/> <span className="ml-2">Apply Filters</span>
-                            </button>
-                            <button onClick={handleClearFilters} className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                            Clear
-                            </button>
-                        </div>
-                    </div>
-                )}
-      
-                <CarTable 
-                  cars={processedCars}
-                  matches={matches}
-                  onEdit={handleOpenEditCarModal}
-                  onDelete={handleDeleteRequest}
-                  view={activeView}
-                  userRole={user.role}
-                />
-                </>
-              )}
-              {activeView === 'matching' && (
-                  <>
-                  <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300">
-                          รายการจับคู่รถ ({matches.length})
-                      </h2>
-                      {user.role !== 'user' && (
+                      )}
+                      {activeView === 'matching' && user.role !== 'user' && (
                         <button
                             onClick={handleOpenAddMatchModal}
                             className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
@@ -661,39 +648,61 @@ const App: React.FC = () => {
                             <PlusIcon /> <span className="ml-2 hidden sm:block">เพิ่มรายการจับคู่</span>
                         </button>
                       )}
+                      {(activeView === 'allocation' || activeView === 'stock') && (
+                        <button 
+                          onClick={() => setIsFilterVisible(!isFilterVisible)}
+                          className={`inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 ${
+                              isFilterVisible 
+                              ? 'bg-sky-100 dark:bg-sky-800/50 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-200' 
+                              : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          <FilterIcon/>
+                          <span className="ml-2">ตัวกรอง</span>
+                        </button>
+                      )}
                   </div>
-                  <MatchingTable 
-                      matches={matches} 
-                      cars={cars} 
-                      onEdit={handleOpenEditMatchModal}
-                      onDelete={handleDeleteMatchRequest} 
-                      userRole={user.role}
-                  />
-                  </>
-              )}
-               {activeView === 'sold' && (
-                  <>
-                  <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300">
-                          รายการรถที่ขายแล้ว ({soldData.length})
-                      </h2>
+              </div>
+
+              {isFilterVisible && (activeView === 'allocation' || activeView === 'stock') && (
+                  <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                          <div className="lg:col-span-2 xl:col-span-1">
+                              <label htmlFor="searchTerm" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+                              <input type="text" name="searchTerm" id="searchTerm" placeholder="VIN, Dealer, Model..." value={stagedFilters.searchTerm} onChange={handleFilterChange}
+                                  className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              />
+                          </div>
+                          <div className="relative">
+                              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{activeView === 'stock' ? 'วันที่ Stock เริ่มต้น' : 'วันที่ Allocate เริ่มต้น'}</label>
+                              <input type="date" name="startDate" id="startDate" value={stagedFilters.startDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                          </div>
+                          <div className="relative">
+                              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{activeView === 'stock' ? 'วันที่ Stock สิ้นสุด' : 'วันที่ Allocate สิ้นสุด'}</label>
+                              <input type="date" name="endDate" id="endDate" value={stagedFilters.endDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                          </div>
+                          <FilterDropdown label="รหัส Dealer" name="dealerCode" options={filterOptions.dealerCodes} />
+                          <MultiSelectFilter label="รุ่นรถ" options={filterOptions.models} selectedOptions={stagedFilters.model} onChange={handleMultiSelectChange('model')} />
+                          <FilterDropdown label="สีรถ" name="color" options={filterOptions.colors} />
+                          <FilterDropdown label="Car Type" name="carType" options={filterOptions.carTypes} />
+                          <FilterDropdown label="PO Type" name="poType" options={filterOptions.poTypes} />
+                           {activeView === 'stock' && (
+                              <FilterDropdown label="สาขาที่ Stock" name="stockLocation" options={filterOptions.stockLocations} />
+                          )}
+                      </div>
+                      <div className="mt-4 flex justify-end space-x-2">
+                          <button onClick={handleApplyFilters} className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
+                              <FilterIcon/> <span className="ml-2">Apply Filters</span>
+                          </button>
+                          <button onClick={handleClearFilters} className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
+                          Clear
+                          </button>
+                      </div>
                   </div>
-                  <SoldCarTable
-                      soldData={soldData}
-                      onEditMatch={handleOpenEditMatchModal}
-                      userRole={user.role}
-                  />
-                  </>
               )}
-              {activeView === 'stats' && (
-                  <StatisticsPage stats={stats} />
-              )}
-              {activeView === 'users' && user.role === 'executive' && (
-                  <UserManagementPage token={token} currentUser={user} />
-              )}
-               {activeView === 'salespersons' && user.role === 'executive' && (
-                  <SalespersonManagementPage token={token} salespersons={allSalespersons} onDataChange={fetchData} />
-              )}
+    
+              {renderContent()}
+
             </>
           )}
       </main>

@@ -8,10 +8,12 @@ type UserRole = 'executive' | 'admin' | 'user';
 interface CarTableProps {
   cars: Car[];
   matches: Match[];
-  onEdit: (car: Car) => void;
-  onDelete: (car: Car) => void;
-  view: 'allocation' | 'stock';
+  view: 'allocation' | 'stock' | 'matching' | 'sold';
   userRole: UserRole;
+  onEdit?: (car: Car) => void;
+  onDelete?: (car: Car) => void;
+  onEditMatch?: (match: Match) => void;
+  onDeleteMatch?: (match: Match) => void;
 }
 
 const formatDate = (dateString?: string | null): string => {
@@ -25,9 +27,8 @@ const formatDate = (dateString?: string | null): string => {
     });
 }
 
-const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, view, userRole }) => {
+const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, onEditMatch, onDeleteMatch, view, userRole }) => {
   const canEdit = userRole !== 'user';
-  const canDeleteAllocation = userRole === 'executive';
   
   const matchesByCarId = new Map(matches.map(m => [m.carId, m]));
 
@@ -47,10 +48,31 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, vi
         <div className="inline-block min-w-full align-middle">
           <div className="space-y-4">
               {cars.map((car, index) => {
-                const isSold = car.status === CarStatus.SOLD;
-                const showDelete = view === 'allocation' ? canDeleteAllocation : canEdit;
                 const match = matchesByCarId.get(car.id!);
+                const isSold = car.status === CarStatus.SOLD;
 
+                const handleEdit = () => {
+                    if ((view === 'matching' || view === 'sold') && match && onEditMatch) {
+                        onEditMatch(match);
+                    } else if ((view === 'allocation' || view === 'stock') && onEdit) {
+                        onEdit(car);
+                    }
+                };
+                
+                const handleDelete = () => {
+                     if (view === 'matching' && match && onDeleteMatch) {
+                        onDeleteMatch(match);
+                    } else if ((view === 'allocation' || view === 'stock') && onDelete) {
+                        onDelete(car);
+                    }
+                };
+
+                const editTitle = view === 'matching' || view === 'sold' ? 'Edit Match Info' : 'Edit Car';
+                const deleteTitle = view === 'stock' ? 'Remove from Stock' : view === 'matching' ? 'Delete Match' : 'Delete Car';
+                
+                const showCarDeleteButton = (view === 'allocation' && userRole === 'executive') || (view === 'stock' && canEdit);
+                const showMatchDeleteButton = view === 'matching' && canEdit;
+                
                 return (
                 <div key={car.id} className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 sm:p-6 flex flex-col sm:flex-row gap-4">
                   {/* Left Side: Number and Dates */}
@@ -142,18 +164,25 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, vi
                   {/* Right Side: Actions */}
                    {canEdit && 
                     <div className="sm:pl-4 sm:border-l dark:border-gray-700 flex items-start justify-end shrink-0">
-                      {!isSold && (
-                          <div className="flex items-center space-x-1">
-                              <button onClick={() => onEdit(car)} title="Edit Car" className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
-                                  <EditIcon />
-                              </button>
-                              {showDelete && 
-                                <button onClick={() => onDelete(car)} title={view === 'stock' ? 'Remove from Stock' : 'Delete Car'} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-800/50">
+                        <div className="flex items-center space-x-1">
+                            <button onClick={handleEdit} title={editTitle} className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
+                                <EditIcon />
+                            </button>
+                            {(showCarDeleteButton || showMatchDeleteButton) && (
+                                <button
+                                    onClick={handleDelete}
+                                    disabled={isSold && view !== 'matching'}
+                                    title={isSold && view !== 'matching' ? "Cannot delete a sold car" : deleteTitle}
+                                    className={`p-2 rounded-full transition-colors ${
+                                        isSold && view !== 'matching'
+                                        ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                        : 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50'
+                                    }`}
+                                >
                                     <TrashIcon />
                                 </button>
-                              }
-                          </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                   }
                 </div>
