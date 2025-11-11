@@ -45,8 +45,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        let errorMessage = 'Login failed';
+        try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || 'Login failed';
+        } catch (e) {
+            // The response body was not valid JSON.
+            // This can happen if the server had an unhandled error and sent an HTML error page.
+            errorMessage = `Login failed. Server returned status: ${response.status} ${response.statusText}`;
+            console.error('Failed to parse JSON from login error response.');
+        }
+        throw new Error(errorMessage);
     }
 
     const data = await response.json();

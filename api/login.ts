@@ -3,18 +3,18 @@ import { sql } from '@/lib/db';
 import { signToken } from '@/lib/auth';
 
 export default async (req: VercelRequest, res: VercelResponse) => {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ message: 'Username and password are required' });
-  }
-
   try {
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', ['POST']);
+      return res.status(405).json({ message: 'Method Not Allowed' });
+    }
+
+    const { username, password } = req.body || {};
+
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+    
     // Corrected query to select 'password' column instead of 'password_hash'
     const { rows } = await sql('SELECT id, password, role FROM users WHERE username = $1', [username]);
     
