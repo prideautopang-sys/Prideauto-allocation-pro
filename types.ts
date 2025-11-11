@@ -32,6 +32,7 @@ export enum MatchStatus {
   WAITING_FOR_CONTRACT = 'รอทำสัญญา',
   WAITING_FOR_PO = 'รอ PO',
   POSTPONED = 'เลื่อนรับรถ',
+  WAITING_FOR_DELIVERY = 'รอรับรถ',
   DELIVERED = 'รับรถแล้ว',
 }
 
