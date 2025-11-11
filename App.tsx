@@ -17,11 +17,11 @@ import MultiSelectFilter from './components/MultiSelectFilter';
 import UserManagementPage from './pages/UserManagementPage';
 import SalespersonManagementPage from './pages/SalespersonManagementPage';
 import SettingsPage from './pages/SettingsPage';
-import LogoManagementPage from './pages/LogoManagementPage';
+import LogoUploader from './components/LogoUploader';
 
 
 type SortableKeys = keyof Car;
-type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons' | 'logo';
+type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons';
 
 // UPDATE: Changed single-select filters to string arrays for multi-select functionality.
 interface Filters {
@@ -574,11 +574,6 @@ const App: React.FC = () => {
           return <SalespersonManagementPage token={token} salespersons={allSalespersons} onDataChange={fetchData} onBack={() => setActiveView('settings')} />;
         }
         return null;
-      case 'logo':
-        if (user.role === 'executive') {
-          return <LogoManagementPage token={token} currentLogo={logo} onLogoUpdate={fetchLogo} onBack={() => setActiveView('settings')} />;
-        }
-        return null;
       default:
         return null;
     }
@@ -593,7 +588,6 @@ const App: React.FC = () => {
       case 'settings': return `Settings`;
       case 'users': return `User Management`;
       case 'salespersons': return `Salesperson Management`;
-      case 'logo': return `Logo Management`;
       default: return '';
     }
   };
@@ -604,16 +598,7 @@ const App: React.FC = () => {
       <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
         <div className="py-4 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between">
-                 <div className="flex items-center space-x-3">
-                    {logo ? (
-                        <img src={logo} alt="Company Logo" className="h-10 object-contain" />
-                    ) : (
-                        <div className="flex flex-row items-baseline justify-center space-x-1.5">
-                            <span className="font-bold text-gray-800 dark:text-gray-200 text-2xl">PRIDE</span>
-                            <span className="font-bold text-gray-800 dark:text-gray-200 text-2xl">AUTO</span>
-                        </div>
-                    )}
-                </div>
+                <LogoUploader logo={logo} userRole={user.role} onLogoUpdate={fetchLogo} />
                 <div className="flex items-center space-x-2">
                     {user.role !== 'user' && (
                     <>

@@ -1,8 +1,8 @@
 import React from 'react';
-import { UserGroupIcon, UserIcon, PhotographIcon } from '../components/icons';
+import { UserGroupIcon, UserIcon } from '../components/icons';
 
 interface SettingsPageProps {
-  onNavigate: (view: 'users' | 'salespersons' | 'logo') => void;
+  onNavigate: (view: 'users' | 'salespersons') => void;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
@@ -18,12 +18,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
       description: 'Manage user accounts and their roles.',
       icon: <UserIcon />,
       view: 'users' as const,
-    },
-    {
-      title: 'Manage Logo',
-      description: 'Upload and update the application logo.',
-      icon: <PhotographIcon />,
-      view: 'logo' as const,
     },
   ];
 
