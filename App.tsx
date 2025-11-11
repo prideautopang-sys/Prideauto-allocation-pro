@@ -43,7 +43,6 @@ const App: React.FC = () => {
   const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
 
   // UI State
-  const [searchTerm, setSearchTerm] = useState('');
   const [activeView, setActiveView] = useState<View>('allocation');
   
   // Filters
@@ -477,64 +476,76 @@ const App: React.FC = () => {
               <>
               {(activeView === 'allocation' || activeView === 'stock') && (
                 <>
-                <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                    {/* Main Filter Controls */}
-                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                        {/* Search Input */}
-                        <div className="lg:col-span-2">
-                             <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
-                             <input type="text" name="search" id="search" placeholder="VIN, Dealer, Model..." value={stagedSearchTerm} onChange={(e) => setStagedSearchTerm(e.target.value)}
-                                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            />
-                        </div>
-                        {/* Status Filter */}
-                        <div>
-                             <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                             <select id="status" name="status" value={stagedStatus} onChange={e => setStagedStatus(e.target.value)} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option>All</option>
-                                {Object.values(CarStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                        </div>
-                        {/* Allocation Type Filter */}
-                        <div>
-                             <label htmlFor="allocationType" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Allocation Type</label>
-                             <select id="allocationType" name="allocationType" value={stagedAllocationType} onChange={e => setStagedAllocationType(e.target.value)} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                <option>All</option>
-                                {[...new Set(cars.map(c => c.poType).filter(Boolean))].map(pt => <option key={pt} value={pt}>{pt}</option>)}
-                            </select>
-                        </div>
-                         {/* Date Range Filter */}
-                        <div className="relative">
-                             <label htmlFor="dateRange" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
-                             <div className="relative mt-1">
-                                <input type="date" name="dateRange" id="dateRange" value={stagedDate} onChange={e => setStagedDate(e.target.value)} className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 pl-3 pr-10 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                    <CalendarIcon/>
-                                </div>
-                             </div>
-                        </div>
-                     </div>
-                     {/* Action Buttons */}
-                     <div className="mt-4 flex justify-end space-x-2">
-                        <button onClick={handleApplyFilters} className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                            <FilterIcon/> <span className="ml-2">Apply Filters</span>
-                        </button>
-                        <button onClick={handleClearFilters} className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                           Clear
-                        </button>
-                     </div>
-                </div>
-
-                {activeView === 'stock' && user.role !== 'user' && (
-                      <div className="mb-4 flex justify-end">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {activeView === 'allocation' ? `Car Allocation (${processedCars.length})` : `Stock (${processedCars.length})`}
+                    </h2>
+                    <div className="flex items-center gap-2">
+                        {activeView === 'stock' && user.role !== 'user' && (
                         <button
                             onClick={() => setIsAddFromAllocationModalOpen(true)}
                             className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                         >
                             <PlusIcon /> <span className="ml-2 hidden sm:block">เพิ่มรถเข้าสต็อก</span>
                         </button>
-                      </div>
-                  )}
+                        )}
+                        <button 
+                        onClick={() => setIsFilterVisible(!isFilterVisible)}
+                        className={`inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 ${
+                            isFilterVisible 
+                            ? 'bg-sky-100 dark:bg-sky-800/50 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-200' 
+                            : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                        }`}
+                        >
+                        <FilterIcon/>
+                        <span className="ml-2">ตัวกรอง</span>
+                        </button>
+                    </div>
+                </div>
+
+                {isFilterVisible && (
+                    <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div className="lg:col-span-2">
+                                <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+                                <input type="text" name="search" id="search" placeholder="VIN, Dealer, Model..." value={stagedSearchTerm} onChange={(e) => setStagedSearchTerm(e.target.value)}
+                                    className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                                <select id="status" name="status" value={stagedStatus} onChange={e => setStagedStatus(e.target.value)} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <option>All</option>
+                                    {Object.values(CarStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label htmlFor="allocationType" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Allocation Type</label>
+                                <select id="allocationType" name="allocationType" value={stagedAllocationType} onChange={e => setStagedAllocationType(e.target.value)} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <option>All</option>
+                                    {[...new Set(cars.map(c => c.poType).filter(Boolean))].map(pt => <option key={pt} value={pt}>{pt}</option>)}
+                                </select>
+                            </div>
+                            <div className="relative">
+                                <label htmlFor="dateRange" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
+                                <div className="relative mt-1">
+                                    <input type="date" name="dateRange" id="dateRange" value={stagedDate} onChange={e => setStagedDate(e.target.value)} className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 pl-3 pr-10 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <CalendarIcon/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex justify-end space-x-2">
+                            <button onClick={handleApplyFilters} className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
+                                <FilterIcon/> <span className="ml-2">Apply Filters</span>
+                            </button>
+                            <button onClick={handleClearFilters} className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
+                            Clear
+                            </button>
+                        </div>
+                    </div>
+                )}
       
                 <CarTable 
                   cars={processedCars} 
