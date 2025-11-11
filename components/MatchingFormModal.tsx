@@ -1,0 +1,144 @@
+import React, { useState, useEffect } from 'react';
+import { Match, MatchStatus, Car, CarStatus } from '../types';
+import { XIcon } from './icons';
+
+type UserRole = 'executive' | 'admin' | 'user';
+
+interface MatchingFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (match: Match) => void;
+  matchToEdit?: Match | null;
+  cars: Car[]; // Pass all cars to find the edited car's details
+  availableCars: Car[]; // Cars with 'In Stock' status
+  userRole: UserRole;
+}
+
+const MatchingFormModal: React.FC<MatchingFormModalProps> = ({ isOpen, onClose, onSave, matchToEdit, cars, availableCars, userRole }) => {
+  const getInitialState = (): Match => {
+    return matchToEdit || {
+      id: Date.now().toString(),
+      carId: '',
+      customerName: '',
+      salesperson: '',
+      saleDate: '',
+      status: MatchStatus.WAITING_FOR_CONTRACT,
+      licensePlate: '',
+      notes: '',
+    };
+  };
+
+  const [match, setMatch] = useState<Match>(getInitialState());
+
+  useEffect(() => {
+    setMatch(getInitialState());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchToEdit, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setMatch(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userRole === 'user') return;
+    if (!match.carId) {
+      alert('กรุณาเลือกรถยนต์');
+      return;
+    }
+    onSave(match);
+  };
+
+  const carForEdit = matchToEdit ? cars.find(c => c.id === matchToEdit.carId) : null;
+  
+  // Create a unique list of car options for the dropdown
+  const carOptionsMap = new Map<string, Car>();
+  if (matchToEdit && carForEdit) {
+    carOptionsMap.set(carForEdit.id, carForEdit);
+  }
+  availableCars.forEach(car => {
+    carOptionsMap.set(car.id, car);
+  });
+  const carOptions = Array.from(carOptionsMap.values());
+
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <form onSubmit={handleSubmit}>
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{matchToEdit ? 'แก้ไขข้อมูลการจับคู่' : 'เพิ่มรายการจับคู่'}</h2>
+              <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <XIcon />
+              </button>
+            </div>
+            
+            <fieldset disabled={userRole === 'user'} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="carId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">เลือกรถจากสต็อก</label>
+                <select
+                  name="carId"
+                  id="carId"
+                  value={match.carId}
+                  onChange={handleChange}
+                  required
+                  disabled={!!matchToEdit}
+                  className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600"
+                >
+                  <option value="">-- เลือกรถ --</option>
+                  {carOptions.map(car => (
+                    <option key={car.id} value={car.id}>
+                      {car.model} ({car.vin}) - {car.color}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">ชื่อลูกค้า</label>
+                <input type="text" name="customerName" id="customerName" value={match.customerName} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600" />
+              </div>
+              <div>
+                <label htmlFor="salesperson" className="block text-sm font-medium text-gray-700 dark:text-gray-300">เซลล์</label>
+                <input type="text" name="salesperson" id="salesperson" value={match.salesperson} onChange={handleChange} required className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600" />
+              </div>
+              <div>
+                <label htmlFor="saleDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">วันที่ตัดขาย</label>
+                <input type="date" name="saleDate" id="saleDate" value={match.saleDate || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600" />
+              </div>
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">สถานะการขาย</label>
+                <select name="status" id="status" value={match.status} onChange={handleChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600">
+                  {Object.values(MatchStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="licensePlate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">ทะเบียนรถ</label>
+                <input type="text" name="licensePlate" id="licensePlate" value={match.licensePlate || ''} onChange={handleChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600" />
+              </div>
+              <div className="md:col-span-2">
+                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">หมายเหตุ</label>
+                <textarea name="notes" id="notes" value={match.notes || ''} onChange={handleChange} rows={3} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600" />
+              </div>
+            </fieldset>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-lg">
+            {userRole !== 'user' && (
+              <button type="submit" className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-sky-600 text-base font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:ml-3 sm:w-auto sm:text-sm">
+                บันทึก
+              </button>
+            )}
+            <button type="button" onClick={onClose} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-500 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+              {userRole === 'user' ? 'ปิด' : 'ยกเลิก'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default MatchingFormModal;

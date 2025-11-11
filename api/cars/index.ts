@@ -1,0 +1,61 @@
+import { VercelResponse } from '@vercel/node';
+import { sql } from '../../lib/db';
+import { withAuth, AuthenticatedRequest } from '../middleware/withAuth';
+import { Car } from '../../types';
+
+const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
+  // GET all cars
+  if (req.method === 'GET') {
+    try {
+      const { rows } = await sql('SELECT * FROM cars ORDER BY allocation_date DESC');
+      return res.status(200).json(rows);
+    } catch (error) {
+      console.error('Error fetching cars:', error);
+      return res.status(500).json({ message: 'Internal Server Error' });
+    }
+  }
+
+  // POST a new car
+  if (req.method === 'POST') {
+    try {
+      const { 
+          dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
+          batteryNo, engineNo, color, carType, allocationDate, poType,
+          price, status 
+      } = req.body as Car;
+
+      // Basic validation
+      if (!model || !vin || !price) {
+          return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      const query = `
+        INSERT INTO cars (
+            dealer_code, dealer_name, model, vin, front_motor_no, rear_motor_no, 
+            battery_no, engine_no, color, car_type, allocation_date, po_type, 
+            price, status
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING *;
+      `;
+      const params = [
+          dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
+          batteryNo, engineNo, color, carType, allocationDate, poType,
+          price, status
+      ];
+
+      const { rows } = await sql(query, params);
+      return res.status(201).json(rows[0]);
+    } catch (error: any) {
+        console.error('Error creating car:', error);
+        if (error.code === '23505') { // Unique constraint violation
+            return res.status(409).json({ message: `A car with VIN ${req.body.vin} already exists.` });
+        }
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+  }
+
+  return res.status(405).json({ message: 'Method Not Allowed' });
+};
+
+// Protect GET for all logged-in users, and POST for admin/executive
+export default withAuth(handler, ['executive', 'admin']);

@@ -1,0 +1,140 @@
+import React, { useState, useEffect } from 'react';
+import { Car, CarStatus } from '../types';
+import { XIcon } from './icons';
+
+type UserRole = 'executive' | 'admin' | 'user';
+
+interface CarFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (car: Car) => void;
+  carToEdit?: Car | null;
+  userRole: UserRole;
+}
+
+const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, carToEdit, userRole }) => {
+  const getInitialState = (): Car => {
+    return carToEdit || {
+      id: Date.now().toString(),
+      dealerCode: '',
+      dealerName: '',
+      model: '',
+      vin: '',
+      frontMotorNo: '',
+      rearMotorNo: '',
+      batteryNo: '',
+      engineNo: '',
+      color: '',
+      carType: '',
+      allocationDate: new Date().toISOString().split('T')[0],
+      poType: '',
+      price: 0,
+      status: CarStatus.WAITING_FOR_TRAILER,
+    };
+  };
+
+  const [car, setCar] = useState<Car>(getInitialState());
+
+  useEffect(() => {
+    setCar(getInitialState());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carToEdit, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setCar(prev => ({ ...prev, [name]: name === 'price' ? Number(value) : value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userRole === 'user') return;
+    onSave(car);
+  };
+
+  const inputFields = [
+      { name: 'dealerCode', label: 'Dealer Code', required: true },
+      { name: 'dealerName', label: 'Dealer Name', required: true },
+      { name: 'model', label: 'Model', required: true },
+      { name: 'vin', label: 'VIN No.', required: true },
+      { name: 'frontMotorNo', label: 'Front Motor No.', required: false },
+      { name: 'rearMotorNo', label: 'Rear Motor No.', required: false },
+      { name: 'batteryNo', label: 'Battery No.', required: false },
+      { name: 'engineNo', label: 'Engine No.', required: false },
+      { name: 'color', label: 'Color', required: true },
+      { name: 'carType', label: 'Car Type', required: false },
+      { name: 'poType', label: 'PO Type', required: false },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <form onSubmit={handleSubmit}>
+          <div className="p-6">
+             <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{carToEdit ? 'แก้ไขข้อมูลรถยนต์' : 'เพิ่มรถใหม่'}</h2>
+                <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <XIcon />
+                </button>
+            </div>
+            
+            <fieldset disabled={userRole === 'user'} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {inputFields.map(field => (
+                    <div key={field.name}>
+                        <label htmlFor={field.name} className="block text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
+                            {field.label}
+                        </label>
+                        <input 
+                            type="text" 
+                            name={field.name} 
+                            id={field.name} 
+                            value={(car as any)[field.name]} 
+                            onChange={handleChange} 
+                            required={field.required}
+                            className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600" />
+                    </div>
+                ))}
+                 <div>
+                    <label htmlFor="allocationDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Allocation Date</label>
+                    <input type="date" name="allocationDate" id="allocationDate" value={car.allocationDate} onChange={handleChange} required 
+                           className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600" />
+                </div>
+                 <div>
+                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Sum of Price (บาท)</label>
+                    <input type="number" name="price" id="price" value={car.price} onChange={handleChange} required 
+                           className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600" />
+                </div>
+                 <div>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                    <select
+                        name="status"
+                        id="status"
+                        value={car.status}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600"
+                    >
+                        {Object.values(CarStatus).map(status => (
+                            <option key={status} value={status}>{status}</option>
+                        ))}
+                    </select>
+                </div>
+            </fieldset>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-lg">
+            {userRole !== 'user' && (
+              <button type="submit" className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-sky-600 text-base font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:ml-3 sm:w-auto sm:text-sm">
+                บันทึก
+              </button>
+            )}
+            <button type="button" onClick={onClose} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-500 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+              {userRole === 'user' ? 'ปิด' : 'ยกเลิก'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default CarFormModal;
