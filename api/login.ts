@@ -1,6 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { sql } from '../../lib/db';
-import bcrypt from 'bcryptjs';
 import { signToken } from '../../lib/auth';
 
 export default async (req: VercelRequest, res: VercelResponse) => {
@@ -15,14 +14,14 @@ export default async (req: VercelRequest, res: VercelResponse) => {
   }
 
   try {
-    const { rows } = await sql('SELECT id, password_hash, role FROM users WHERE username = $1', [username]);
+    const { rows } = await sql('SELECT id, password, role FROM users WHERE username = $1', [username]);
     
     if (rows.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const user = rows[0];
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    const isPasswordValid = password === user.password;
 
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
