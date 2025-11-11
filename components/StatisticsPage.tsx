@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Car, Match, CarStatus, MatchStatus } from '../types';
 import { ArchiveIcon, BookmarkIcon, CheckCircleIcon, ClockIcon, CollectionIcon, DownloadIcon, TruckIcon } from './icons';
 import LineChart from './LineChart';
+import BarChart from './BarChart';
 
 interface StatisticsPageProps {
   stats: Record<CarStatus | 'total', number>;
@@ -31,8 +32,9 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, colorClass }) =
 
 const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches }) => {
   const [timeframe, setTimeframe] = useState<'monthly' | 'yearly'>('monthly');
+  const [salesAnalysisDate, setSalesAnalysisDate] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
 
-  const chartData = useMemo(() => {
+  const lineChartData = useMemo(() => {
     const dataMap = new Map<string, { allocated: number; stocked: number; sold: number }>();
     const now = new Date();
 
@@ -48,33 +50,23 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
       return label;
     });
 
-    // Process Allocated Cars
     cars.forEach(car => {
       if (car.allocationDate) {
         const date = new Date(car.allocationDate);
         const label = timeframe === 'monthly'
           ? date.toLocaleString('default', { month: 'short', year: '2-digit' })
           : String(date.getFullYear());
-        if (dataMap.has(label)) {
-          dataMap.get(label)!.allocated++;
-        }
+        if (dataMap.has(label)) dataMap.get(label)!.allocated++;
       }
-    });
-
-    // Process Stocked Cars
-    cars.forEach(car => {
       if (car.stockInDate) {
         const date = new Date(car.stockInDate);
         const label = timeframe === 'monthly'
           ? date.toLocaleString('default', { month: 'short', year: '2-digit' })
           : String(date.getFullYear());
-        if (dataMap.has(label)) {
-          dataMap.get(label)!.stocked++;
-        }
+        if (dataMap.has(label)) dataMap.get(label)!.stocked++;
       }
     });
 
-    // Process Sold Cars
     matches
       .filter(match => match.status === MatchStatus.DELIVERED && match.saleDate)
       .forEach(match => {
@@ -82,9 +74,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
         const label = timeframe === 'monthly'
           ? date.toLocaleString('default', { month: 'short', year: '2-digit' })
           : String(date.getFullYear());
-        if (dataMap.has(label)) {
-          dataMap.get(label)!.sold++;
-        }
+        if (dataMap.has(label)) dataMap.get(label)!.sold++;
       });
 
     const allocatedData = labels.map(label => dataMap.get(label)!.allocated);
@@ -94,30 +84,59 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
     return {
       labels,
       datasets: [
-        {
-          label: 'Allocated',
-          data: allocatedData,
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.5)',
-          tension: 0.1,
-        },
-        {
-          label: 'Stocked',
-          data: stockedData,
-          borderColor: 'rgb(139, 92, 246)',
-          backgroundColor: 'rgba(139, 92, 246, 0.5)',
-          tension: 0.1,
-        },
-        {
-          label: 'Sold',
-          data: soldData,
-          borderColor: 'rgb(22, 163, 74)',
-          backgroundColor: 'rgba(22, 163, 74, 0.5)',
-          tension: 0.1,
-        },
+        { label: 'Allocated', data: allocatedData, borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.5)', tension: 0.1 },
+        { label: 'Stocked', data: stockedData, borderColor: 'rgb(139, 92, 246)', backgroundColor: 'rgba(139, 92, 246, 0.5)', tension: 0.1 },
+        { label: 'Sold', data: soldData, borderColor: 'rgb(22, 163, 74)', backgroundColor: 'rgba(22, 163, 74, 0.5)', tension: 0.1 },
       ],
     };
   }, [cars, matches, timeframe]);
+
+  const salesPerformanceData = useMemo(() => {
+    const carsById = new Map(cars.map(c => [c.id, c]));
+    const [year, month] = salesAnalysisDate.split('-').map(Number);
+    
+    const relevantMatches = matches.filter(match => {
+        if (match.status !== MatchStatus.DELIVERED || !match.saleDate) return false;
+        const saleDate = new Date(match.saleDate);
+        return saleDate.getFullYear() === year && saleDate.getMonth() === month - 1;
+    });
+
+    const getTop5 = (key: 'model' | 'salesperson') => {
+        const counts = new Map<string, number>();
+        relevantMatches.forEach(match => {
+            let itemKey: string | undefined;
+            if (key === 'model') {
+                itemKey = carsById.get(match.carId)?.model;
+            } else {
+                itemKey = match.salesperson;
+            }
+            if (itemKey) {
+                counts.set(itemKey, (counts.get(itemKey) || 0) + 1);
+            }
+        });
+
+        const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        
+        return {
+            labels: sorted.map(item => item[0]),
+            data: sorted.map(item => item[1]),
+        };
+    };
+
+    const topModels = getTop5('model');
+    const topSalespersons = getTop5('salesperson');
+
+    return {
+        topModelsChart: {
+            labels: topModels.labels,
+            datasets: [{ label: 'Units Sold', data: topModels.data, backgroundColor: 'rgba(54, 162, 235, 0.6)' }]
+        },
+        topSalespersonsChart: {
+            labels: topSalespersons.labels,
+            datasets: [{ label: 'Units Sold', data: topSalespersons.data, backgroundColor: 'rgba(75, 192, 192, 0.6)' }]
+        }
+    };
+  }, [cars, matches, salesAnalysisDate]);
 
   const statCardsData = [
     { title: CarStatus.WAITING_FOR_TRAILER, value: stats[CarStatus.WAITING_FOR_TRAILER], icon: <ClockIcon />, colorClass: "border-l-4 border-yellow-500" },
@@ -132,29 +151,20 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
     <div className="p-4 sm:p-0">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">สรุปภาพรวมสต็อกรถยนต์</h2>
         
-        {/* Total card */}
         <div className="mb-8">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex items-center space-x-6 border-l-4 border-sky-500">
-                <div className="flex-shrink-0 bg-sky-100 dark:bg-sky-900/50 p-4 rounded-full">
-                    <CollectionIcon />
-                </div>
+                <div className="flex-shrink-0 bg-sky-100 dark:bg-sky-900/50 p-4 rounded-full"> <CollectionIcon /> </div>
                 <div>
                     <p className="text-lg font-medium text-gray-500 dark:text-gray-400">รถยนต์ทั้งหมดในระบบ</p>
-                    <p className="text-5xl font-extrabold text-sky-600 dark:text-sky-400 mt-1">
-                        {(stats.total || 0).toLocaleString()}
-                    </p>
+                    <p className="text-5xl font-extrabold text-sky-600 dark:text-sky-400 mt-1">{(stats.total || 0).toLocaleString()}</p>
                 </div>
             </div>
         </div>
 
-        {/* Status cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {statCardsData.map(data => (
-                <StatCard key={data.title} {...data} />
-            ))}
+            {statCardsData.map(data => <StatCard key={data.title} {...data} />)}
         </div>
 
-        {/* Chart Section */}
         <div className="mt-8">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
@@ -164,8 +174,43 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
                         <button onClick={() => setTimeframe('yearly')} className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${timeframe === 'yearly' ? 'bg-white dark:bg-gray-900 text-sky-600 dark:text-sky-400 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}>Yearly</button>
                      </div>
                 </div>
-                <div className="h-80 w-full">
-                    <LineChart chartData={chartData} />
+                <div className="h-80 w-full"> <LineChart chartData={lineChartData} /> </div>
+            </div>
+        </div>
+        
+        <div className="mt-8">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
+                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sales Performance Analysis</h3>
+                     <input 
+                        type="month" 
+                        value={salesAnalysisDate}
+                        onChange={(e) => setSalesAnalysisDate(e.target.value)}
+                        className="bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-sm font-medium text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                     />
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4">
+                    <div>
+                        <h4 className="text-center font-semibold text-gray-700 dark:text-gray-300 mb-2">Top 5 Selling Models</h4>
+                        <div className="h-80 w-full relative">
+                           {salesPerformanceData.topModelsChart.labels.length > 0 ? (
+                                <BarChart chartData={salesPerformanceData.topModelsChart} />
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center text-gray-500">No sales data for this month.</div>
+                            )}
+                        </div>
+                    </div>
+                    <div>
+                        <h4 className="text-center font-semibold text-gray-700 dark:text-gray-300 mb-2">Top 5 Performing Salespersons</h4>
+                         <div className="h-80 w-full relative">
+                           {salesPerformanceData.topSalespersonsChart.labels.length > 0 ? (
+                                <BarChart chartData={salesPerformanceData.topSalespersonsChart} />
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center text-gray-500">No sales data for this month.</div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
