@@ -10,16 +10,17 @@ import AddFromAllocationModal from './components/AddFromAllocationModal';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ConfirmMatchDeleteModal from './components/ConfirmMatchDeleteModal';
 import StatisticsPage from './components/StatisticsPage';
-import { PlusIcon, ClipboardPlusIcon, UserIcon, UserGroupIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon } from './components/icons';
+import { PlusIcon, ClipboardPlusIcon, UserIcon, UserGroupIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon, CogIcon } from './components/icons';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 import MultiSelectFilter from './components/MultiSelectFilter';
 import UserManagementPage from './pages/UserManagementPage';
 import SalespersonManagementPage from './pages/SalespersonManagementPage';
+import SettingsPage from './pages/SettingsPage';
 
 
 type SortableKeys = keyof Car;
-type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'users' | 'salespersons';
+type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons';
 
 interface Filters {
   searchTerm: string;
@@ -65,7 +66,7 @@ const App: React.FC = () => {
   // Editing/Deleting State
   const [editingCar, setEditingCar] = useState<Car | null>(null);
   const [carToDelete, setCarToDelete] = useState<Car | null>(null);
-  const [deleteRequestContext, setDeleteRequestContext] = useState<View | null>(null);
+  const [deleteRequestContext, setDeleteRequestContext] = useState<'allocation' | 'stock' | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
 
@@ -160,8 +161,10 @@ const App: React.FC = () => {
   };
   
   const handleDeleteRequest = (car: Car) => {
-    setCarToDelete(car);
-    setDeleteRequestContext(activeView);
+    if (activeView === 'allocation' || activeView === 'stock') {
+      setCarToDelete(car);
+      setDeleteRequestContext(activeView);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -391,16 +394,20 @@ const App: React.FC = () => {
   // Memoized Data for Views
   const allocatedCars = useMemo(() => cars, [cars]);
   const stockCars = useMemo(() => cars.filter(car => car.stockInDate && car.status !== CarStatus.SOLD), [cars]);
-  const matchingCars = useMemo(() => cars.filter(car => car.status === CarStatus.RESERVED), [cars]);
-  const soldCars = useMemo(() => cars.filter(car => car.status === CarStatus.SOLD), [cars]);
+  const matchingCarsData = useMemo(() => cars.filter(car => car.status === CarStatus.RESERVED), [cars]);
+  const soldCarsData = useMemo(() => cars.filter(car => car.status === CarStatus.SOLD), [cars]);
 
   const carsNotInStock = useMemo(() => cars.filter(car => !car.stockInDate), [cars]);
   const carsInStockForMatching = useMemo(() => cars.filter(c => c.status === CarStatus.IN_STOCK), [cars]);
 
   const processedCars = useMemo(() => {
-    if (!['allocation', 'stock'].includes(activeView)) return [];
-    const sourceCars = activeView === 'stock' ? stockCars : allocatedCars;
-    
+    let sourceCars: Car[] = [];
+    if (activeView === 'allocation') sourceCars = allocatedCars;
+    else if (activeView === 'stock') sourceCars = stockCars;
+    else if (activeView === 'matching') sourceCars = matchingCarsData;
+    else if (activeView === 'sold') sourceCars = soldCarsData;
+    else return [];
+
     let filtered = sourceCars.filter(car => {
       const { searchTerm, startDate, endDate, dealerCode, model, color, carType, poType, stockLocation } = activeFilters;
       
@@ -414,11 +421,18 @@ const App: React.FC = () => {
       const matchesColor = color === 'All' || car.color === color;
       const matchesCarType = carType === 'All' || car.carType === carType;
       const matchesPoType = poType === 'All' || car.poType === poType;
-      const matchesStockLocation = activeView === 'stock' ? (stockLocation === 'All' || car.stockLocation === stockLocation) : true;
+      const matchesStockLocation = (activeView === 'stock' || activeView === 'matching' || activeView === 'sold') ? (stockLocation === 'All' || car.stockLocation === stockLocation) : true;
       
       let matchesDate = true;
       if (startDate || endDate) {
-          const dateField = activeView === 'stock' ? car.stockInDate : car.allocationDate;
+          let dateField: string | undefined;
+          if (activeView === 'allocation') dateField = car.allocationDate;
+          if (activeView === 'stock' || activeView === 'matching') dateField = car.stockInDate;
+          if (activeView === 'sold') {
+            const match = matches.find(m => m.carId === car.id);
+            dateField = match?.saleDate;
+          }
+
           if (!dateField) {
               matchesDate = false;
           } else {
@@ -453,7 +467,7 @@ const App: React.FC = () => {
         return direction === 'ascending' ? comparison : -comparison;
     });
     return filtered;
-  }, [allocatedCars, stockCars, activeFilters, sortConfig, activeView]);
+  }, [allocatedCars, stockCars, matchingCarsData, soldCarsData, activeFilters, sortConfig, activeView, matches]);
   
 
   const stats = useMemo(() => {
@@ -516,47 +530,32 @@ const App: React.FC = () => {
     switch(activeView) {
       case 'allocation':
       case 'stock':
+      case 'matching':
+      case 'sold':
         return (
           <CarTable 
             cars={processedCars}
             matches={matches}
             onEdit={handleOpenEditCarModal}
             onDelete={handleDeleteRequest}
+            onEditMatch={handleOpenEditMatchModal}
+            onDeleteMatch={handleDeleteMatchRequest}
             view={activeView}
             userRole={user.role}
           />
         );
-      case 'matching':
-        return (
-          <CarTable
-            cars={matchingCars}
-            matches={matches}
-            view="matching"
-            userRole={user.role}
-            onEditMatch={handleOpenEditMatchModal}
-            onDeleteMatch={handleDeleteMatchRequest}
-          />
-        );
-      case 'sold':
-        return (
-          <CarTable
-            cars={soldCars}
-            matches={matches}
-            view="sold"
-            userRole={user.role}
-            onEditMatch={handleOpenEditMatchModal}
-          />
-        );
       case 'stats':
         return <StatisticsPage stats={stats} />;
+       case 'settings':
+        return <SettingsPage onNavigate={(view) => setActiveView(view)} />;
       case 'users':
         if (user.role === 'executive') {
-          return <UserManagementPage token={token} currentUser={user} />;
+          return <UserManagementPage token={token} currentUser={user} onBack={() => setActiveView('settings')} />;
         }
         return null;
       case 'salespersons':
         if (user.role === 'executive') {
-          return <SalespersonManagementPage token={token} salespersons={allSalespersons} onDataChange={fetchData} />;
+          return <SalespersonManagementPage token={token} salespersons={allSalespersons} onDataChange={fetchData} onBack={() => setActiveView('settings')} />;
         }
         return null;
       default:
@@ -568,8 +567,11 @@ const App: React.FC = () => {
     switch(activeView) {
       case 'allocation': return `Car Allocation (${processedCars.length})`;
       case 'stock': return `Stock (${processedCars.length})`;
-      case 'matching': return `Matching (${matchingCars.length})`;
-      case 'sold': return `Sold Cars (${soldCars.length})`;
+      case 'matching': return `Matching (${processedCars.length})`;
+      case 'sold': return `Sold Cars (${processedCars.length})`;
+      case 'settings': return `Settings`;
+      case 'users': return `User Management`;
+      case 'salespersons': return `Salesperson Management`;
       default: return '';
     }
   };
@@ -611,14 +613,11 @@ const App: React.FC = () => {
             <div className="flex space-x-2 py-2 overflow-x-auto">
                 <NavButton view="allocation" label={`Car allocation (${allocatedCars.length})`} icon={<CollectionIcon className="h-5 w-5"/>} />
                 <NavButton view="stock" label={`Stock (${stockCars.length})`} icon={<ArchiveIcon className="h-5 w-5"/>} />
-                <NavButton view="matching" label={`Matching (${matchingCars.length})`} icon={<LinkIcon />} />
-                <NavButton view="sold" label={`Sold Cars (${soldCars.length})`} icon={<ShoppingCartIcon />} />
+                <NavButton view="matching" label={`Matching (${matchingCarsData.length})`} icon={<LinkIcon />} />
+                <NavButton view="sold" label={`Sold Cars (${soldCarsData.length})`} icon={<ShoppingCartIcon />} />
                 <NavButton view="stats" label="Statistics" icon={<ChartBarIcon />} />
                 {user.role === 'executive' && (
-                  <>
-                    <NavButton view="salespersons" label="Salespersons" icon={<UserGroupIcon />} />
-                    <NavButton view="users" label="Users" icon={<UserIcon />} />
-                  </>
+                    <NavButton view="settings" label="Settings" icon={<CogIcon />} />
                 )}
             </div>
         </nav>
@@ -648,7 +647,7 @@ const App: React.FC = () => {
                             <PlusIcon /> <span className="ml-2 hidden sm:block">เพิ่มรายการจับคู่</span>
                         </button>
                       )}
-                      {(activeView === 'allocation' || activeView === 'stock') && (
+                      {(['allocation', 'stock', 'matching', 'sold'].includes(activeView)) && (
                         <button 
                           onClick={() => setIsFilterVisible(!isFilterVisible)}
                           className={`inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 ${
@@ -664,7 +663,7 @@ const App: React.FC = () => {
                   </div>
               </div>
 
-              {isFilterVisible && (activeView === 'allocation' || activeView === 'stock') && (
+              {isFilterVisible && (['allocation', 'stock', 'matching', 'sold'].includes(activeView)) && (
                   <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                           <div className="lg:col-span-2 xl:col-span-1">
@@ -674,11 +673,15 @@ const App: React.FC = () => {
                               />
                           </div>
                           <div className="relative">
-                              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{activeView === 'stock' ? 'วันที่ Stock เริ่มต้น' : 'วันที่ Allocate เริ่มต้น'}</label>
+                              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {activeView === 'sold' ? 'วันที่ตัดขาย เริ่มต้น' : (activeView === 'stock' || activeView === 'matching') ? 'วันที่ Stock เริ่มต้น' : 'วันที่ Allocate เริ่มต้น'}
+                              </label>
                               <input type="date" name="startDate" id="startDate" value={stagedFilters.startDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                           </div>
                           <div className="relative">
-                              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{activeView === 'stock' ? 'วันที่ Stock สิ้นสุด' : 'วันที่ Allocate สิ้นสุด'}</label>
+                              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                 {activeView === 'sold' ? 'วันที่ตัดขาย สิ้นสุด' : (activeView === 'stock' || activeView === 'matching') ? 'วันที่ Stock สิ้นสุด' : 'วันที่ Allocate สิ้นสุด'}
+                              </label>
                               <input type="date" name="endDate" id="endDate" value={stagedFilters.endDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                           </div>
                           <FilterDropdown label="รหัส Dealer" name="dealerCode" options={filterOptions.dealerCodes} />
@@ -686,7 +689,7 @@ const App: React.FC = () => {
                           <FilterDropdown label="สีรถ" name="color" options={filterOptions.colors} />
                           <FilterDropdown label="Car Type" name="carType" options={filterOptions.carTypes} />
                           <FilterDropdown label="PO Type" name="poType" options={filterOptions.poTypes} />
-                           {activeView === 'stock' && (
+                           {(activeView === 'stock' || activeView === 'matching' || activeView === 'sold') && (
                               <FilterDropdown label="สาขาที่ Stock" name="stockLocation" options={filterOptions.stockLocations} />
                           )}
                       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppUser } from '../types';
-import { PlusIcon } from '../components/icons';
+import { PlusIcon, ArrowLeftIcon } from '../components/icons';
 import UserTable from '../components/UserTable';
 import UserFormModal from '../components/UserFormModal';
 import ConfirmUserDeleteModal from '../components/ConfirmUserDeleteModal';
@@ -8,9 +8,10 @@ import ConfirmUserDeleteModal from '../components/ConfirmUserDeleteModal';
 interface UserManagementPageProps {
   token: string | null;
   currentUser: { id: string; role: string };
+  onBack: () => void;
 }
 
-const UserManagementPage: React.FC<UserManagementPageProps> = ({ token, currentUser }) => {
+const UserManagementPage: React.FC<UserManagementPageProps> = ({ token, currentUser, onBack }) => {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,9 +113,10 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ token, currentU
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300">
-          User Management ({users.length})
-        </h2>
+         <button onClick={onBack} className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+            <ArrowLeftIcon />
+            <span className="ml-2">Back to Settings</span>
+        </button>
         <button
           onClick={handleOpenAddUserModal}
           className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
