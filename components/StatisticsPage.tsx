@@ -1,9 +1,12 @@
-import React from 'react';
-import { CarStatus } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Car, Match, CarStatus, MatchStatus } from '../types';
 import { ArchiveIcon, BookmarkIcon, CheckCircleIcon, ClockIcon, CollectionIcon, DownloadIcon, TruckIcon } from './icons';
+import LineChart from './LineChart';
 
 interface StatisticsPageProps {
   stats: Record<CarStatus | 'total', number>;
+  cars: Car[];
+  matches: Match[];
 }
 
 interface StatCardProps {
@@ -26,7 +29,96 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, colorClass }) =
 );
 
 
-const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats }) => {
+const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches }) => {
+  const [timeframe, setTimeframe] = useState<'monthly' | 'yearly'>('monthly');
+
+  const chartData = useMemo(() => {
+    const dataMap = new Map<string, { allocated: number; stocked: number; sold: number }>();
+    const now = new Date();
+
+    const labels = Array.from({ length: timeframe === 'monthly' ? 12 : 5 }).map((_, i) => {
+      let label;
+      if (timeframe === 'monthly') {
+        const date = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+        label = date.toLocaleString('default', { month: 'short', year: '2-digit' });
+      } else { // yearly
+        label = String(now.getFullYear() - (4 - i));
+      }
+      dataMap.set(label, { allocated: 0, stocked: 0, sold: 0 });
+      return label;
+    });
+
+    // Process Allocated Cars
+    cars.forEach(car => {
+      if (car.allocationDate) {
+        const date = new Date(car.allocationDate);
+        const label = timeframe === 'monthly'
+          ? date.toLocaleString('default', { month: 'short', year: '2-digit' })
+          : String(date.getFullYear());
+        if (dataMap.has(label)) {
+          dataMap.get(label)!.allocated++;
+        }
+      }
+    });
+
+    // Process Stocked Cars
+    cars.forEach(car => {
+      if (car.stockInDate) {
+        const date = new Date(car.stockInDate);
+        const label = timeframe === 'monthly'
+          ? date.toLocaleString('default', { month: 'short', year: '2-digit' })
+          : String(date.getFullYear());
+        if (dataMap.has(label)) {
+          dataMap.get(label)!.stocked++;
+        }
+      }
+    });
+
+    // Process Sold Cars
+    matches
+      .filter(match => match.status === MatchStatus.DELIVERED && match.saleDate)
+      .forEach(match => {
+        const date = new Date(match.saleDate!);
+        const label = timeframe === 'monthly'
+          ? date.toLocaleString('default', { month: 'short', year: '2-digit' })
+          : String(date.getFullYear());
+        if (dataMap.has(label)) {
+          dataMap.get(label)!.sold++;
+        }
+      });
+
+    const allocatedData = labels.map(label => dataMap.get(label)!.allocated);
+    const stockedData = labels.map(label => dataMap.get(label)!.stocked);
+    const soldData = labels.map(label => dataMap.get(label)!.sold);
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Allocated',
+          data: allocatedData,
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+          tension: 0.1,
+        },
+        {
+          label: 'Stocked',
+          data: stockedData,
+          borderColor: 'rgb(139, 92, 246)',
+          backgroundColor: 'rgba(139, 92, 246, 0.5)',
+          tension: 0.1,
+        },
+        {
+          label: 'Sold',
+          data: soldData,
+          borderColor: 'rgb(22, 163, 74)',
+          backgroundColor: 'rgba(22, 163, 74, 0.5)',
+          tension: 0.1,
+        },
+      ],
+    };
+  }, [cars, matches, timeframe]);
+
   const statCardsData = [
     { title: CarStatus.WAITING_FOR_TRAILER, value: stats[CarStatus.WAITING_FOR_TRAILER], icon: <ClockIcon />, colorClass: "border-l-4 border-yellow-500" },
     { title: CarStatus.ON_TRAILER, value: stats[CarStatus.ON_TRAILER], icon: <TruckIcon />, colorClass: "border-l-4 border-orange-500" },
@@ -60,6 +152,22 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats }) => {
             {statCardsData.map(data => (
                 <StatCard key={data.title} {...data} />
             ))}
+        </div>
+
+        {/* Chart Section */}
+        <div className="mt-8">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
+                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Trend Analysis</h3>
+                     <div className="flex space-x-1 bg-gray-200 dark:bg-gray-700 p-1 rounded-lg self-start sm:self-center">
+                        <button onClick={() => setTimeframe('monthly')} className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${timeframe === 'monthly' ? 'bg-white dark:bg-gray-900 text-sky-600 dark:text-sky-400 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}>Monthly</button>
+                        <button onClick={() => setTimeframe('yearly')} className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${timeframe === 'yearly' ? 'bg-white dark:bg-gray-900 text-sky-600 dark:text-sky-400 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}>Yearly</button>
+                     </div>
+                </div>
+                <div className="h-80 w-full">
+                    <LineChart chartData={chartData} />
+                </div>
+            </div>
         </div>
     </div>
   );

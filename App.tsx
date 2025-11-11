@@ -22,30 +22,32 @@ import SettingsPage from './pages/SettingsPage';
 type SortableKeys = keyof Car;
 type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons';
 
+// UPDATE: Changed single-select filters to string arrays for multi-select functionality.
 interface Filters {
   searchTerm: string;
   startDate: string;
   endDate: string;
-  dealerCode: string;
+  dealerCode: string[];
   model: string[];
-  color: string;
-  carType: string;
-  poType: string;
-  stockLocation: string;
-  matchStatus: string;
+  color: string[];
+  carType: string[];
+  poType: string[];
+  stockLocation: string[];
+  matchStatus: string[];
 }
 
+// UPDATE: Changed initial filter values from 'All' to empty arrays for multi-select.
 const initialFilters: Filters = {
   searchTerm: '',
   startDate: '',
   endDate: '',
-  dealerCode: 'All',
+  dealerCode: [],
   model: [],
-  color: 'All',
-  carType: 'All',
-  poType: 'All',
-  stockLocation: 'All',
-  matchStatus: 'All',
+  color: [],
+  carType: [],
+  poType: [],
+  stockLocation: [],
+  matchStatus: [],
 };
 
 const App: React.FC = () => {
@@ -367,7 +369,8 @@ const App: React.FC = () => {
     setStagedFilters(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleMultiSelectChange = (filterName: 'model') => (selected: string[]) => {
+  // UPDATE: Generic handler for all multi-select filters.
+  const handleMultiSelectChange = (filterName: keyof Filters) => (selected: string[]) => {
     setStagedFilters(prev => ({ ...prev, [filterName]: selected }));
   };
   
@@ -418,16 +421,17 @@ const App: React.FC = () => {
         Object.values(car).some(val => String(val).toLowerCase().includes(searchLower))
       ) : true;
 
-      const matchesDealer = dealerCode === 'All' || car.dealerCode === dealerCode;
-      const matchesModel = model.length === 0 || model.includes(car.model);
-      const matchesColor = color === 'All' || car.color === color;
-      const matchesCarType = carType === 'All' || car.carType === carType;
-      const matchesPoType = poType === 'All' || car.poType === poType;
-      const matchesStockLocation = (activeView === 'stock' || activeView === 'matching' || activeView === 'sold') ? (stockLocation === 'All' || car.stockLocation === stockLocation) : true;
+      // UPDATE: Filtering logic updated to handle arrays for all multi-select filters.
+      const matchesDealer = dealerCode.length === 0 || (car.dealerCode && dealerCode.includes(car.dealerCode));
+      const matchesModel = model.length === 0 || (car.model && model.includes(car.model));
+      const matchesColor = color.length === 0 || (car.color && color.includes(car.color));
+      const matchesCarType = carType.length === 0 || (car.carType && carType.includes(car.carType));
+      const matchesPoType = poType.length === 0 || (car.poType && poType.includes(car.poType));
+      const matchesStockLocation = (activeView === 'stock' || activeView === 'matching' || activeView === 'sold') ? (stockLocation.length === 0 || (car.stockLocation && stockLocation.includes(car.stockLocation))) : true;
       
       const match = matches.find(m => m.carId === car.id);
       const matchesMatchStatus = (activeView === 'matching')
-        ? (matchStatus === 'All' || (match && match.status === matchStatus))
+        ? (matchStatus.length === 0 || (match && matchStatus.includes(match.status)))
         : true;
 
       let matchesDate = true;
@@ -509,22 +513,6 @@ const App: React.FC = () => {
     </button>
   );
 
-  const FilterDropdown: React.FC<{ label: string; name: keyof Filters; options: string[] }> = ({ label, name, options }) => (
-    <div>
-        <label htmlFor={name as string} className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-        <select 
-            id={name as string} 
-            name={name as string} 
-            value={stagedFilters[name] as string} 
-            onChange={handleFilterChange} 
-            className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-        >
-            <option value="All">All</option>
-            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
-    </div>
-  );
-  
   if (isAuthLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">Loading...</div>;
   }
@@ -552,7 +540,7 @@ const App: React.FC = () => {
           />
         );
       case 'stats':
-        return <StatisticsPage stats={stats} />;
+        return <StatisticsPage stats={stats} cars={cars} matches={matches} />;
        case 'settings':
         return <SettingsPage onNavigate={(view) => setActiveView(view)} />;
       case 'users':
@@ -691,19 +679,21 @@ const App: React.FC = () => {
                               </label>
                               <input type="date" name="endDate" id="endDate" value={stagedFilters.endDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                           </div>
-                          <FilterDropdown label="รหัส Dealer" name="dealerCode" options={filterOptions.dealerCodes} />
+                          {/* UPDATE: Replaced all FilterDropdowns with MultiSelectFilter for enhanced functionality */}
+                          <MultiSelectFilter label="รหัส Dealer" options={filterOptions.dealerCodes} selectedOptions={stagedFilters.dealerCode} onChange={handleMultiSelectChange('dealerCode')} />
                           <MultiSelectFilter label="รุ่นรถ" options={filterOptions.models} selectedOptions={stagedFilters.model} onChange={handleMultiSelectChange('model')} />
-                          <FilterDropdown label="สีรถ" name="color" options={filterOptions.colors} />
-                          <FilterDropdown label="Car Type" name="carType" options={filterOptions.carTypes} />
-                          <FilterDropdown label="PO Type" name="poType" options={filterOptions.poTypes} />
+                          <MultiSelectFilter label="สีรถ" options={filterOptions.colors} selectedOptions={stagedFilters.color} onChange={handleMultiSelectChange('color')} />
+                          <MultiSelectFilter label="Car Type" options={filterOptions.carTypes} selectedOptions={stagedFilters.carType} onChange={handleMultiSelectChange('carType')} />
+                          <MultiSelectFilter label="PO Type" options={filterOptions.poTypes} selectedOptions={stagedFilters.poType} onChange={handleMultiSelectChange('poType')} />
                            {(activeView === 'stock' || activeView === 'matching' || activeView === 'sold') && (
-                              <FilterDropdown label="สาขาที่ Stock" name="stockLocation" options={filterOptions.stockLocations} />
+                              <MultiSelectFilter label="สาขาที่ Stock" options={filterOptions.stockLocations} selectedOptions={stagedFilters.stockLocation} onChange={handleMultiSelectChange('stockLocation')} />
                           )}
                            {activeView === 'matching' && (
-                                <FilterDropdown 
-                                    label="สถานะการจอง" 
-                                    name="matchStatus" 
+                                <MultiSelectFilter 
+                                    label="สถานะการจอง"
                                     options={Object.values(MatchStatus)} 
+                                    selectedOptions={stagedFilters.matchStatus}
+                                    onChange={handleMultiSelectChange('matchStatus')}
                                 />
                             )}
                       </div>
