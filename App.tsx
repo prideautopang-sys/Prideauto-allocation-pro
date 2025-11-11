@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Car, CarStatus, Match, MatchStatus } from './types';
+import { Car, CarStatus, Match, MatchStatus, Salesperson, AppUser } from './types';
 import CarTable from './components/CarTable';
 import MatchingTable from './components/MatchingTable';
 import SoldCarTable from './components/SoldCarTable';
@@ -10,14 +10,16 @@ import AddFromAllocationModal from './components/AddFromAllocationModal';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ConfirmMatchDeleteModal from './components/ConfirmMatchDeleteModal';
 import StatisticsPage from './components/StatisticsPage';
-import { PlusIcon, ClipboardPlusIcon, CarIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon, CalendarIcon } from './components/icons';
+import { PlusIcon, ClipboardPlusIcon, UserIcon, UserGroupIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon } from './components/icons';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 import MultiSelectFilter from './components/MultiSelectFilter';
+import UserManagementPage from './pages/UserManagementPage';
+import SalespersonManagementPage from './pages/SalespersonManagementPage';
 
 
 type SortableKeys = keyof Car;
-type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold';
+type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'users' | 'salespersons';
 
 interface Filters {
   searchTerm: string;
@@ -48,6 +50,9 @@ const App: React.FC = () => {
   
   const [cars, setCars] = useState<Car[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [salespersons, setSalespersons] = useState<Salesperson[]>([]);
+  const [allSalespersons, setAllSalespersons] = useState<Salesperson[]>([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,23 +86,41 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [carsRes, matchesRes] = await Promise.all([
+      const fetches = [
         fetch('/api/cars', { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch('/api/matches', { headers: { 'Authorization': `Bearer ${token}` } }),
-      ]);
-      if (!carsRes.ok || !matchesRes.ok) throw new Error('Failed to fetch data');
+        fetch('/api/salespersons?status=active', { headers: { 'Authorization': `Bearer ${token}` } }),
+      ];
+
+      if (user?.role === 'executive') {
+        fetches.push(fetch('/api/salespersons', { headers: { 'Authorization': `Bearer ${token}` } }));
+      }
+
+      const responses = await Promise.all(fetches);
       
-      const carsData = await carsRes.json();
-      const matchesData = await matchesRes.json();
+      for (const res of responses) {
+        if (!res.ok) throw new Error('Failed to fetch data');
+      }
+
+      const [carsData, matchesData, activeSalespersonsData] = await Promise.all(responses.slice(0, 3).map(res => res.json()));
       
       setCars(carsData);
       setMatches(matchesData);
+      setSalespersons(activeSalespersonsData);
+      
+      if (user?.role === 'executive' && responses[3]) {
+        const allSalespersonsData = await responses[3].json();
+        setAllSalespersons(allSalespersonsData);
+      } else {
+        setAllSalespersons(activeSalespersonsData);
+      }
+
     } catch (err: any) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  }, [token, user?.role]);
 
   useEffect(() => {
     fetchData();
@@ -528,6 +551,12 @@ const App: React.FC = () => {
                 <NavButton view="matching" label={`Matching (${matches.length})`} icon={<LinkIcon />} />
                 <NavButton view="sold" label={`Sold Cars (${soldCars.length})`} icon={<ShoppingCartIcon />} />
                 <NavButton view="stats" label="Statistics" icon={<ChartBarIcon />} />
+                {user.role === 'executive' && (
+                  <>
+                    <NavButton view="salespersons" label="Salespersons" icon={<UserGroupIcon />} />
+                    <NavButton view="users" label="Users" icon={<UserIcon />} />
+                  </>
+                )}
             </div>
         </nav>
       </header>
@@ -651,6 +680,12 @@ const App: React.FC = () => {
               {activeView === 'stats' && (
                   <StatisticsPage stats={stats} />
               )}
+              {activeView === 'users' && user.role === 'executive' && (
+                  <UserManagementPage token={token} currentUser={user} />
+              )}
+               {activeView === 'salespersons' && user.role === 'executive' && (
+                  <SalespersonManagementPage token={token} salespersons={allSalespersons} onDataChange={fetchData} />
+              )}
             </>
           )}
       </main>
@@ -671,6 +706,7 @@ const App: React.FC = () => {
         cars={cars}
         availableCars={carsInStockForMatching}
         userRole={user.role}
+        salespersons={salespersons}
       />
       <ConfirmDeleteModal
         isOpen={!!carToDelete}
