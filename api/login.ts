@@ -15,16 +15,18 @@ export default async (req: VercelRequest, res: VercelResponse) => {
       return res.status(400).json({ message: 'Username and password are required' });
     }
     
-    // Corrected query to select 'password' column instead of 'password_hash'
-    const { rows } = await sql('SELECT id, password, role FROM users WHERE username = $1', [username]);
-    
-    if (rows.length === 0) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    let user;
+    try {
+      const { rows } = await sql('SELECT id, password, role FROM users WHERE username = $1', [username]);
+      if (rows.length === 0) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+      user = rows[0];
+    } catch (dbError) {
+      console.error('[API Login] Database Error:', dbError);
+      return res.status(500).json({ message: 'An error occurred while querying the database.' });
     }
 
-    const user = rows[0];
-    
-    // Plain text password comparison
     const isPasswordValid = password === user.password;
 
     if (!isPasswordValid) {
