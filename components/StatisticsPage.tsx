@@ -3,6 +3,7 @@ import { Car, Match, CarStatus, MatchStatus } from '../types';
 import { ArchiveIcon, BookmarkIcon, CheckCircleIcon, ClockIcon, CollectionIcon, DownloadIcon, TruckIcon } from './icons';
 import LineChart from './LineChart';
 import PieChart from './PieChart';
+import BarChart from './BarChart';
 
 interface StatisticsPageProps {
   stats: Record<CarStatus | 'total', number>;
@@ -151,6 +152,30 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
         }
     };
   }, [cars, matches, salesAnalysisDate]);
+  
+  const stockByModelData = useMemo(() => {
+    const stockCars = cars.filter(car => car.status === CarStatus.IN_STOCK);
+    
+    const counts = new Map<string, number>();
+    stockCars.forEach(car => {
+        const model = car.model;
+        if (model) {
+            counts.set(model, (counts.get(model) || 0) + 1);
+        }
+    });
+
+    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    
+    return {
+        labels: sorted.map(item => item[0]),
+        datasets: [{
+            label: 'Cars in Stock',
+            data: sorted.map(item => item[1]),
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+        }],
+    };
+  }, [cars]);
+
 
   const statCardsData = [
     { title: CarStatus.WAITING_FOR_TRAILER, value: stats[CarStatus.WAITING_FOR_TRAILER], icon: <ClockIcon />, colorClass: "border-l-4 border-yellow-500" },
@@ -225,6 +250,21 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
                             )}
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <div className="mt-8">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
+                <div className="flex justify-between items-center mb-4">
+                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Current Stock by Model</h3>
+                </div>
+                <div className="h-96 w-full relative">
+                   {stockByModelData.labels.length > 0 ? (
+                        <BarChart chartData={stockByModelData} />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-500">No cars currently in stock.</div>
+                    )}
                 </div>
             </div>
         </div>
