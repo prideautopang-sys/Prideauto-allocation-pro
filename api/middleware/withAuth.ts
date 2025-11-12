@@ -3,12 +3,13 @@ import { verifyToken } from '../../lib/auth.js';
 
 type Role = 'executive' | 'admin' | 'user';
 
-export interface AuthenticatedRequest extends VercelRequest {
+// FIX: Changed interface to a type intersection to resolve issues with TS not recognizing extended properties.
+export type AuthenticatedRequest = VercelRequest & {
   user?: {
     userId: string;
     role: Role;
   };
-}
+};
 
 // FIX: The ApiHandler type was too strict (Promise<void>). Changed to Promise<any> to accommodate handlers that return the VercelResponse object (e.g., `return res.json(...)`).
 type ApiHandler = (req: AuthenticatedRequest, res: VercelResponse) => Promise<any>;

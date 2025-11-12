@@ -18,10 +18,11 @@ import UserManagementPage from './pages/UserManagementPage';
 import SalespersonManagementPage from './pages/SalespersonManagementPage';
 import SettingsPage from './pages/SettingsPage';
 import LogoUploader from './components/LogoUploader';
+import ExportPage from './pages/ExportPage';
 
 
 type SortableKeys = keyof Car;
-type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons';
+type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons' | 'export';
 
 // UPDATE: Changed single-select filters to string arrays for multi-select functionality.
 interface Filters {
@@ -581,6 +582,11 @@ const App: React.FC = () => {
           return <SalespersonManagementPage token={token} salespersons={allSalespersons} onDataChange={fetchData} onBack={() => setActiveView('settings')} />;
         }
         return null;
+      case 'export':
+        if (user.role === 'executive') {
+          return <ExportPage cars={cars} matches={matches} onBack={() => setActiveView('settings')} />;
+        }
+        return null;
       default:
         return null;
     }
@@ -595,6 +601,7 @@ const App: React.FC = () => {
       case 'settings': return `Settings`;
       case 'users': return `User Management`;
       case 'salespersons': return `Salesperson Management`;
+      case 'export': return `Export Data`;
       default: return '';
     }
   };

@@ -1,8 +1,8 @@
 import React from 'react';
-import { UserGroupIcon, UserIcon } from '../components/icons';
+import { UserGroupIcon, UserIcon, DocumentDownloadIcon } from '../components/icons';
 
 interface SettingsPageProps {
-  onNavigate: (view: 'users' | 'salespersons') => void;
+  onNavigate: (view: 'users' | 'salespersons' | 'export') => void;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
@@ -18,6 +18,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
       description: 'Manage user accounts and their roles.',
       icon: <UserIcon />,
       view: 'users' as const,
+    },
+     {
+      title: 'Export Data',
+      description: 'Export car data to XLSX files.',
+      icon: <DocumentDownloadIcon />,
+      view: 'export' as const,
     },
   ];
 

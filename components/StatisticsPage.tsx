@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Car, Match, CarStatus, MatchStatus } from '../types';
 import { ArchiveIcon, BookmarkIcon, CheckCircleIcon, ClockIcon, CollectionIcon, DownloadIcon, TruckIcon } from './icons';
 import LineChart from './LineChart';
-import BarChart from './BarChart';
+import PieChart from './PieChart';
 
 interface StatisticsPageProps {
   stats: Record<CarStatus | 'total', number>;
@@ -92,7 +92,8 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
   }, [cars, matches, timeframe]);
 
   const salesPerformanceData = useMemo(() => {
-    const carsById = new Map(cars.map(c => [c.id, c]));
+    // FIX: Explicitly type the Map and use non-null assertion for car ID to fix type inference issues.
+    const carsById = new Map<string, Car>(cars.map(c => [c.id!, c]));
     const [year, month] = salesAnalysisDate.split('-').map(Number);
     
     const relevantMatches = matches.filter(match => {
@@ -101,21 +102,16 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
         return saleDate.getFullYear() === year && saleDate.getMonth() === month - 1;
     });
 
-    const getTop5 = (key: 'model' | 'salesperson') => {
+    const getAllModels = () => {
         const counts = new Map<string, number>();
         relevantMatches.forEach(match => {
-            let itemKey: string | undefined;
-            if (key === 'model') {
-                itemKey = carsById.get(match.carId)?.model;
-            } else {
-                itemKey = match.salesperson;
-            }
+            const itemKey = carsById.get(match.carId)?.model;
             if (itemKey) {
                 counts.set(itemKey, (counts.get(itemKey) || 0) + 1);
             }
         });
 
-        const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
         
         return {
             labels: sorted.map(item => item[0]),
@@ -123,17 +119,35 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
         };
     };
 
-    const topModels = getTop5('model');
-    const topSalespersons = getTop5('salesperson');
+    const getAllSalespersons = () => {
+        const counts = new Map<string, number>();
+        relevantMatches.forEach(match => {
+            const itemKey = match.salesperson;
+            if (itemKey) {
+                counts.set(itemKey, (counts.get(itemKey) || 0) + 1);
+            }
+        });
+        const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+        return {
+            labels: sorted.map(item => item[0]),
+            data: sorted.map(item => item[1]),
+        };
+    };
+
+    const allModels = getAllModels();
+    const allSalespersons = getAllSalespersons();
 
     return {
-        topModelsChart: {
-            labels: topModels.labels,
-            datasets: [{ label: 'Units Sold', data: topModels.data, backgroundColor: 'rgba(54, 162, 235, 0.6)' }]
+        modelsPieChart: {
+            labels: allModels.labels,
+            datasets: [{ label: 'Units Sold', data: allModels.data }]
         },
-        topSalespersonsChart: {
-            labels: topSalespersons.labels,
-            datasets: [{ label: 'Units Sold', data: topSalespersons.data, backgroundColor: 'rgba(75, 192, 192, 0.6)' }]
+        salespersonsPieChart: {
+            labels: allSalespersons.labels,
+            datasets: [{ 
+              label: 'Units Sold', 
+              data: allSalespersons.data,
+            }]
         }
     };
   }, [cars, matches, salesAnalysisDate]);
@@ -192,20 +206,20 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4">
                     <div>
-                        <h4 className="text-center font-semibold text-gray-700 dark:text-gray-300 mb-2">Top 5 Selling Models</h4>
+                        <h4 className="text-center font-semibold text-gray-700 dark:text-gray-300 mb-2">Sales by Model</h4>
                         <div className="h-80 w-full relative">
-                           {salesPerformanceData.topModelsChart.labels.length > 0 ? (
-                                <BarChart chartData={salesPerformanceData.topModelsChart} />
+                           {salesPerformanceData.modelsPieChart.labels.length > 0 ? (
+                                <PieChart chartData={salesPerformanceData.modelsPieChart} />
                             ) : (
                                 <div className="absolute inset-0 flex items-center justify-center text-gray-500">No sales data for this month.</div>
                             )}
                         </div>
                     </div>
                     <div>
-                        <h4 className="text-center font-semibold text-gray-700 dark:text-gray-300 mb-2">Top 5 Performing Salespersons</h4>
+                        <h4 className="text-center font-semibold text-gray-700 dark:text-gray-300 mb-2">Sales by Salesperson</h4>
                          <div className="h-80 w-full relative">
-                           {salesPerformanceData.topSalespersonsChart.labels.length > 0 ? (
-                                <BarChart chartData={salesPerformanceData.topSalespersonsChart} />
+                           {salesPerformanceData.salespersonsPieChart.labels.length > 0 ? (
+                                <PieChart chartData={salesPerformanceData.salespersonsPieChart} />
                             ) : (
                                 <div className="absolute inset-0 flex items-center justify-center text-gray-500">No sales data for this month.</div>
                             )}

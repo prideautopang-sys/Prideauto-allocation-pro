@@ -30,7 +30,8 @@ const formatDate = (dateString?: string | null): string => {
 const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, onEditMatch, onDeleteMatch, view, userRole }) => {
   const canEdit = userRole !== 'user';
   
-  const matchesByCarId = new Map(matches.map(m => [m.carId, m]));
+  // FIX: Explicitly type the Map to fix type inference issues with `match` being `unknown`.
+  const matchesByCarId = new Map<string, Match>(matches.map(m => [m.carId, m]));
 
   const IdentifierRow: React.FC<{label: string; value?: string | null}> = ({ label, value }) => {
     if (!value || value === 'N/A' || value.trim() === '') return null;
