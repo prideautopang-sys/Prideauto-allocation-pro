@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Car, CarStatus } from '../types';
 import { XIcon } from './icons';
@@ -127,6 +128,18 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, ca
                         ))}
                     </select>
                 </div>
+                {(car.status === CarStatus.IN_STOCK || car.status === CarStatus.RESERVED || car.status === CarStatus.SOLD) && (
+                    <div>
+                        <label htmlFor="stockNo" className="block text-sm font-medium text-gray-700 dark:text-gray-300">เลขสต็อก</label>
+                        <input
+                            type="text"
+                            name="stockNo"
+                            id="stockNo"
+                            value={car.stockNo || ''}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-200 dark:disabled:bg-gray-600" />
+                    </div>
+                )}
             </fieldset>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-lg">

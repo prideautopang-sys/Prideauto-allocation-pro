@@ -1,3 +1,4 @@
+
 import { VercelResponse } from '@vercel/node';
 import { sql } from '../../lib/db.js';
 import { withAuth, AuthenticatedRequest } from '../middleware/withAuth.js';
@@ -14,7 +15,8 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
           front_motor_no as "frontMotorNo", rear_motor_no as "rearMotorNo", 
           battery_no as "batteryNo", engine_no as "engineNo", color, car_type as "carType", 
           allocation_date as "allocationDate", po_type as "poType", price, status, 
-          stock_in_date as "stockInDate", stock_location as "stockLocation"
+          stock_in_date as "stockInDate", stock_location as "stockLocation",
+          stock_no as "stockNo"
         FROM cars ORDER BY allocation_date DESC
       `);
       return res.status(200).json(rows);

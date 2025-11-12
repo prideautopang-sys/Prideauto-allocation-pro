@@ -1,3 +1,4 @@
+
 import { VercelResponse } from '@vercel/node';
 import { sql } from '../../lib/db.js';
 import { withAuth, AuthenticatedRequest } from '../middleware/withAuth.js';
@@ -21,7 +22,7 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
             const { 
                 dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
                 batteryNo, engineNo, color, carType, allocationDate, poType,
-                price, status, stockInDate, stockLocation 
+                price, status, stockInDate, stockLocation, stockNo
             } = req.body as Car;
 
             const query = `
@@ -29,14 +30,14 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                     dealer_code = $1, dealer_name = $2, model = $3, vin = $4, front_motor_no = $5, 
                     rear_motor_no = $6, battery_no = $7, engine_no = $8, color = $9, car_type = $10, 
                     allocation_date = $11, po_type = $12, price = $13, status = $14, 
-                    stock_in_date = $15, stock_location = $16, updated_at = NOW()
-                WHERE id = $17
+                    stock_in_date = $15, stock_location = $16, stock_no = $17, updated_at = NOW()
+                WHERE id = $18
                 RETURNING *;
             `;
             const params = [
                 dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
                 batteryNo, engineNo, color, carType, allocationDate, poType,
-                price, status, stockInDate, stockLocation, id
+                price, status, stockInDate, stockLocation, stockNo, id
             ];
             
             const { rows } = await sql(query, params);
@@ -62,6 +63,12 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
         }
 
         try {
+            // Check if car is part of a match
+            const { rows: matchRows } = await sql('SELECT id FROM matches WHERE car_id = $1', [id]);
+            if (matchRows.length > 0) {
+                return res.status(400).json({ message: 'Cannot delete car: It is associated with a match. Please remove the match first.' });
+            }
+            
             const { rowCount } = await sql('DELETE FROM cars WHERE id = $1', [id]);
             if (rowCount === 0) {
                 return res.status(404).json({ message: 'Car not found' });

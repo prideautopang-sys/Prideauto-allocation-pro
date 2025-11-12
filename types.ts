@@ -17,6 +17,7 @@ export interface Car {
   status: CarStatus;
   stockInDate?: string;
   stockLocation?: 'มหาสารคาม' | 'กาฬสินธุ์';
+  stockNo?: string;
 }
 
 export enum CarStatus {

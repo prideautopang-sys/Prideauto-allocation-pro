@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Car } from '../types';
 import { XIcon } from './icons';
@@ -5,7 +6,7 @@ import { XIcon } from './icons';
 interface AddFromAllocationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์') => void;
+  onSave: (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => void;
   allocatedCars: Car[];
 }
 
@@ -13,6 +14,7 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
   const [selectedCarIds, setSelectedCarIds] = useState<string[]>([]);
   const [stockInDate, setStockInDate] = useState(new Date().toISOString().split('T')[0]);
   const [stockLocation, setStockLocation] = useState<'มหาสารคาม' | 'กาฬสินธุ์'>('มหาสารคาม');
+  const [stockNo, setStockNo] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredCars = useMemo(() => {
@@ -30,6 +32,7 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
       if (!isOpen) {
         setSelectedCarIds([]);
         setSearchTerm('');
+        setStockNo('');
       }
   }, [isOpen]);
 
@@ -42,8 +45,8 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
   };
 
   const handleToggleSelectAll = () => {
-    const allFilteredIds = filteredCars.map(car => car.id);
-    const areAllSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedCarIds.includes(id));
+    const allFilteredIds = filteredCars.map(car => car.id!);
+    const areAllSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedCarIds.includes(id!));
 
     if (areAllSelected) {
       setSelectedCarIds(prev => prev.filter(id => !allFilteredIds.includes(id)));
@@ -58,7 +61,7 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
         alert('กรุณาเลือกรถยนต์อย่างน้อย 1 คัน');
         return;
     }
-    onSave(selectedCarIds, stockInDate, stockLocation);
+    onSave(selectedCarIds, stockInDate, stockLocation, stockNo);
   };
 
   return (
@@ -87,7 +90,7 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
                         <tr>
                             <th className="px-4 py-3 text-left">
                                 <input type="checkbox"
-                                    checked={filteredCars.length > 0 && filteredCars.every(c => selectedCarIds.includes(c.id))}
+                                    checked={filteredCars.length > 0 && filteredCars.every(c => selectedCarIds.includes(c.id!))}
                                     onChange={handleToggleSelectAll}
                                     className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
                                 />
@@ -100,11 +103,11 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
                     </thead>
                     <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                         {filteredCars.map(car => (
-                            <tr key={car.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${selectedCarIds.includes(car.id) ? 'bg-sky-50 dark:bg-sky-900/50' : ''}`}>
+                            <tr key={car.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${selectedCarIds.includes(car.id!) ? 'bg-sky-50 dark:bg-sky-900/50' : ''}`}>
                                 <td className="px-4 py-2">
                                     <input type="checkbox"
-                                        checked={selectedCarIds.includes(car.id)}
-                                        onChange={() => handleToggleSelect(car.id)}
+                                        checked={selectedCarIds.includes(car.id!)}
+                                        onChange={() => handleToggleSelect(car.id!)}
                                         className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
                                     />
                                 </td>
@@ -120,7 +123,7 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
                     <p className="text-center py-4 text-gray-500 dark:text-gray-400">ไม่พบรถใน Allocation หรือไม่ตรงกับคำค้นหา</p>
                 )}
             </div>
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label htmlFor="stockInDateModal" className="block text-sm font-medium text-gray-700 dark:text-gray-300">วันที่นำเข้าสต็อก</label>
                     <input
@@ -143,6 +146,15 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
                         <option value="มหาสารคาม">มหาสารคาม</option>
                         <option value="กาฬสินธุ์">กาฬสินธุ์</option>
                     </select>
+                </div>
+                <div>
+                    <label htmlFor="stockNoModal" className="block text-sm font-medium text-gray-700 dark:text-gray-300">เลขสต็อก (ถ้ามี)</label>
+                    <input
+                        type="text"
+                        id="stockNoModal"
+                        value={stockNo}
+                        onChange={(e) => setStockNo(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                 </div>
             </div>
           </div>

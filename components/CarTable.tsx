@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Car, CarStatus, Match } from '../types';
 import { EditIcon, TrashIcon } from './icons';
@@ -156,6 +157,11 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                             {car.stockLocation && (
                                 <div className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
                                     สาขา: {car.stockLocation}
+                                </div>
+                            )}
+                            {car.stockNo && (
+                                <div className="text-xs font-mono text-gray-500 dark:text-gray-400 px-1 pt-1">
+                                    S/N: {car.stockNo}
                                 </div>
                             )}
                           </div>

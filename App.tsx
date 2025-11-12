@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Car, CarStatus, Match, MatchStatus, Salesperson, AppUser } from './types';
 import CarTable from './components/CarTable';
@@ -203,7 +204,7 @@ const App: React.FC = () => {
     try {
         if (deleteRequestContext === 'stock') {
             // "Delete" from stock means resetting its stock status
-            const updatedCar = { ...carToDelete, status: CarStatus.UNLOADED, stockInDate: undefined, stockLocation: undefined };
+            const updatedCar = { ...carToDelete, status: CarStatus.UNLOADED, stockInDate: undefined, stockLocation: undefined, stockNo: undefined };
             const response = await fetch(`/api/cars/${carToDelete.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -368,11 +369,11 @@ const App: React.FC = () => {
     handleCloseModals();
   };
   
-  const handleAddFromAllocation = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์') => {
+  const handleAddFromAllocation = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => {
       const updatePromises = cars
         .filter(car => carIds.includes(car.id!))
         .map(car => {
-          const updatedCar = { ...car, stockInDate, stockLocation, status: CarStatus.IN_STOCK };
+          const updatedCar = { ...car, stockInDate, stockLocation, status: CarStatus.IN_STOCK, stockNo: stockNo || undefined };
           return fetch(`/api/cars/${car.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
