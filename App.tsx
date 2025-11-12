@@ -728,7 +728,7 @@ const App: React.FC = () => {
                            {(activeView === 'allocation' || activeView === 'stock') && (
                                 <MultiSelectFilter 
                                     label="สถานะ"
-                                    options={[...Object.values(CarStatus), ...Object.values(MatchStatus)]} 
+                                    options={[...Object.values(CarStatus), ...Object.values(MatchStatus).filter(s => s !== MatchStatus.DELIVERED)]} 
                                     selectedOptions={stagedFilters.carStatus}
                                     onChange={handleMultiSelectChange('carStatus')}
                                 />
