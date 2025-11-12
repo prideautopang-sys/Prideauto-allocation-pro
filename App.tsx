@@ -37,6 +37,7 @@ interface Filters {
   stockLocation: string[];
   matchStatus: string[];
   salesperson: string[];
+  carStatus: string[];
 }
 
 // UPDATE: Changed initial filter values from 'All' to empty arrays for multi-select.
@@ -52,6 +53,7 @@ const initialFilters: Filters = {
   stockLocation: [],
   matchStatus: [],
   salesperson: [],
+  carStatus: [],
 };
 
 const App: React.FC = () => {
@@ -439,7 +441,7 @@ const App: React.FC = () => {
     else return [];
 
     let filtered = sourceCars.filter(car => {
-      const { searchTerm, startDate, endDate, dealerCode, model, color, carType, poType, stockLocation, matchStatus, salesperson } = activeFilters;
+      const { searchTerm, startDate, endDate, dealerCode, model, color, carType, poType, stockLocation, matchStatus, salesperson, carStatus } = activeFilters;
       
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = searchTerm ? (
@@ -485,8 +487,16 @@ const App: React.FC = () => {
               matchesDate = (!start || carDate >= start) && (!end || carDate <= end);
           }
       }
+      
+      const matchesCarStatus = (activeView === 'allocation' || activeView === 'stock')
+        ? (
+            carStatus.length === 0 ||
+            carStatus.includes(car.status) ||
+            (car.status === CarStatus.RESERVED && match && carStatus.includes(match.status))
+          )
+        : true;
 
-      return matchesSearch && matchesDealer && matchesModel && matchesColor && matchesCarType && matchesPoType && matchesStockLocation && matchesDate && matchesMatchStatus && matchesSalesperson;
+      return matchesSearch && matchesDealer && matchesModel && matchesColor && matchesCarType && matchesPoType && matchesStockLocation && matchesDate && matchesMatchStatus && matchesSalesperson && matchesCarStatus;
     });
 
     const { key, direction } = sortConfig;
@@ -715,6 +725,14 @@ const App: React.FC = () => {
                           <MultiSelectFilter label="สีรถ" options={filterOptions.colors} selectedOptions={stagedFilters.color} onChange={handleMultiSelectChange('color')} />
                           <MultiSelectFilter label="Car Type" options={filterOptions.carTypes} selectedOptions={stagedFilters.carType} onChange={handleMultiSelectChange('carType')} />
                           <MultiSelectFilter label="PO Type" options={filterOptions.poTypes} selectedOptions={stagedFilters.poType} onChange={handleMultiSelectChange('poType')} />
+                           {(activeView === 'allocation' || activeView === 'stock') && (
+                                <MultiSelectFilter 
+                                    label="สถานะ"
+                                    options={[...Object.values(CarStatus), ...Object.values(MatchStatus)]} 
+                                    selectedOptions={stagedFilters.carStatus}
+                                    onChange={handleMultiSelectChange('carStatus')}
+                                />
+                            )}
                            {(activeView === 'stock' || activeView === 'matching' || activeView === 'sold') && (
                               <MultiSelectFilter label="สาขาที่ Stock" options={filterOptions.stockLocations} selectedOptions={stagedFilters.stockLocation} onChange={handleMultiSelectChange('stockLocation')} />
                           )}
