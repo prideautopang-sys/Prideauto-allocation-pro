@@ -164,14 +164,16 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
         }
     });
 
-    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    const sorted = Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
     
     return {
         labels: sorted.map(item => item[0]),
         datasets: [{
             label: 'Cars in Stock',
             data: sorted.map(item => item[1]),
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1,
         }],
     };
   }, [cars]);

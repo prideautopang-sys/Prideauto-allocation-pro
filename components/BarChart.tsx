@@ -30,16 +30,61 @@ const BarChart: React.FC<BarChartProps> = ({ chartData }) => {
                 const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
                 const textColor = isDarkMode ? 'rgb(209, 213, 219)' : 'rgb(107, 114, 128)';
                 
+                const datalabelsPlugin = {
+                    id: 'customDatalabels',
+                    afterDatasetsDraw(chart: any) {
+                        const { ctx } = chart;
+                        const meta = chart.getDatasetMeta(0);
+
+                        ctx.save();
+                        ctx.font = '600 12px sans-serif';
+                        
+                        meta.data.forEach((element: any, index: number) => {
+                            const dataValue = chart.data.datasets[0].data[index];
+                            if (dataValue === 0) return;
+
+                            const text = String(dataValue);
+                            const textMetrics = ctx.measureText(text);
+                            const textWidth = textMetrics.width;
+                            
+                            const barWidth = element.width;
+                            const padding = 6;
+                            
+                            // If the label fits inside the bar, draw it inside
+                            if (barWidth > textWidth + padding * 2) {
+                                ctx.textAlign = 'right';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillStyle = '#fff'; // White text for good contrast on a solid bar
+                                ctx.fillText(text, element.x - padding, element.y);
+                            } else {
+                                // Otherwise, draw it outside the bar
+                                ctx.textAlign = 'left';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillStyle = textColor; // Use the standard axis text color
+                                ctx.fillText(text, element.x + padding, element.y);
+                            }
+                        });
+
+                        ctx.restore();
+                    }
+                };
+                
                 chartInstanceRef.current = new Chart(ctx, {
                     type: 'bar',
                     data: chartData,
+                    plugins: [datalabelsPlugin], // Add custom plugin here
                     options: {
-                        indexAxis: 'y', // Makes the bar chart horizontal
+                        indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
+                        elements: {
+                            bar: {
+                                borderRadius: 4, // Rounded corners for bars
+                            }
+                        },
                         plugins: {
                             legend: {
-                                display: false, // Hide legend for cleaner look
+                                display: false,
                             },
                             title: {
                                 display: false,
@@ -59,7 +104,7 @@ const BarChart: React.FC<BarChartProps> = ({ chartData }) => {
                                     color: textColor,
                                 },
                                 grid: {
-                                    display: false, // Hide y-axis grid lines
+                                    display: false,
                                 }
                             },
                             x: {
