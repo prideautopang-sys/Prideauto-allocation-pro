@@ -604,6 +604,7 @@ const App: React.FC = () => {
                   if (key === 'matchStatus' && !filterValues.includes(match.status)) return false;
                   if (key === 'salesperson' && !filterValues.includes(match.salesperson)) return false;
               } else if (key === 'carStatus') {
+                  // FIX: The filter key is `carStatus` but the property on the Car object is `status`.
                   if (!filterValues.includes(car.status)) return false;
               } else {
                   const carValue = car[key as keyof Car];
@@ -745,10 +746,10 @@ const App: React.FC = () => {
   };
   
   const navigationItems = [
-    { view: 'allocation', label: 'Allocation', icon: CollectionIcon, count: activeView === 'allocation' ? filteredCars.length : cars.length },
-    { view: 'stock', label: 'Stock', icon: ArchiveIcon, count: activeView === 'stock' ? viewStockCars.length : stockCars.length },
-    { view: 'matching', label: 'Matching', icon: LinkIcon, count: activeView === 'matching' ? viewMatchingCars.length : matchingCars.length },
-    { view: 'sold', label: 'Sold', icon: ShoppingCartIcon, count: activeView === 'sold' ? viewSoldCars.length : soldCars.length },
+    { view: 'allocation', label: 'Allocation', icon: CollectionIcon, count: cars.length },
+    { view: 'stock', label: 'Stock', icon: ArchiveIcon, count: stockCars.length },
+    { view: 'matching', label: 'Matching', icon: LinkIcon, count: matchingCars.length },
+    { view: 'sold', label: 'Sold', icon: ShoppingCartIcon, count: soldCars.length },
     { view: 'stats', label: 'Statistics', icon: ChartBarIcon },
   ];
   
@@ -892,7 +893,7 @@ const App: React.FC = () => {
           </div>
       )}
 
-      <main>
+      <main className="pb-16 md:pb-0">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             {renderContent()}
         </div>
@@ -953,6 +954,36 @@ const App: React.FC = () => {
             car={carToUnstock}
         />
 
+        {/* --- Mobile Navigation --- */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_5px_rgba(0,0,0,0.1)] z-30">
+            <div className="flex justify-around items-center h-16">
+                {navigationItems.map(item => (
+                    <button
+                        key={item.view}
+                        onClick={() => setActiveView(item.view as View)}
+                        title={item.label}
+                        className={`relative flex-grow flex flex-col items-center justify-center h-16 transition-colors focus:outline-none ${
+                            activeView === item.view
+                            ? 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                        }`}
+                        aria-label={item.label}
+                        aria-current={activeView === item.view ? 'page' : undefined}
+                    >
+                        <item.icon className="h-6 w-6" />
+                        {item.count !== undefined && (
+                            <span className={`absolute top-2 right-1/2 translate-x-4 transform px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${
+                                activeView === item.view
+                                ? 'bg-sky-500 text-white'
+                                : 'bg-gray-400 text-white dark:bg-gray-600 dark:text-gray-100'
+                            }`}>
+                                {item.count}
+                            </span>
+                        )}
+                    </button>
+                ))}
+            </div>
+        </div>
     </div>
   );
 };
