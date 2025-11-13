@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Car, CarStatus, Match } from '../types';
-import { EditIcon, TrashIcon } from './icons';
+import { EditIcon, TrashIcon, UnlinkIcon, ArchiveOutIcon } from './icons';
 import StatusBadge from './StatusBadge';
 
 type UserRole = 'executive' | 'admin' | 'user';
@@ -15,6 +15,7 @@ interface CarTableProps {
   onDelete?: (car: Car) => void;
   onEditMatch?: (match: Match) => void;
   onDeleteMatch?: (match: Match) => void;
+  onDeleteStockRequest?: (car: Car) => void;
 }
 
 const formatDate = (dateString?: string | null): string => {
@@ -28,7 +29,7 @@ const formatDate = (dateString?: string | null): string => {
     });
 }
 
-const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, onEditMatch, onDeleteMatch, view, userRole }) => {
+const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, onEditMatch, onDeleteMatch, onDeleteStockRequest, view, userRole }) => {
   const canEdit = userRole !== 'user';
   
   // FIX: Explicitly type the Map to fix type inference issues with `match` being `unknown`.
@@ -56,7 +57,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                 const handleEdit = () => {
                     if ((view === 'matching' || view === 'sold') && match && onEditMatch) {
                         onEditMatch(match);
-                    } else if ((view === 'allocation' || view === 'stock') && onEdit) {
+                    } else if (onEdit) { // Simplified edit for allocation/stock
                         onEdit(car);
                     }
                 };
@@ -69,11 +70,25 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                     }
                 };
 
-                const editTitle = view === 'matching' || view === 'sold' ? 'Edit Match Info' : 'Edit Car';
+                const handleUnlink = () => {
+                    if (match && onDeleteMatch) {
+                        onDeleteMatch(match);
+                    }
+                };
+
+                const handleUnstock = () => {
+                    if (car && onDeleteStockRequest) {
+                        onDeleteStockRequest(car);
+                    }
+                }
+
+                const editTitle = (view === 'matching' || view === 'sold') ? 'Edit Match Info' : 'Edit Car';
                 const deleteTitle = view === 'stock' ? 'Remove from Stock' : view === 'matching' ? 'Delete Match' : 'Delete Car';
                 
                 const showCarDeleteButton = (view === 'allocation' && userRole === 'executive') || (view === 'stock' && canEdit);
                 const showMatchDeleteButton = view === 'matching' && canEdit;
+                const showUnlinkButton = view === 'allocation' && !!match;
+                const showUnstockButton = view === 'allocation' && !!car.stockInDate && car.status !== CarStatus.RESERVED && car.status !== CarStatus.SOLD;
                 
                 return (
                 <div key={car.id} className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 sm:p-6 flex flex-col sm:flex-row gap-4">
@@ -182,6 +197,16 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                    {canEdit && 
                     <div className="sm:pl-4 sm:border-l dark:border-gray-700 flex items-start justify-end shrink-0">
                         <div className="flex items-center space-x-1">
+                            {showUnlinkButton && (
+                                <button onClick={handleUnlink} title="ลบการ Matching" className="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-200 p-2 rounded-full hover:bg-orange-50 dark:hover:bg-orange-800/50">
+                                    <UnlinkIcon />
+                                </button>
+                            )}
+                            {showUnstockButton && (
+                                <button onClick={handleUnstock} title="ลบการ Stock" className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 p-2 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-800/50">
+                                    <ArchiveOutIcon />
+                                </button>
+                            )}
                             <button onClick={handleEdit} title={editTitle} className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
                                 <EditIcon />
                             </button>

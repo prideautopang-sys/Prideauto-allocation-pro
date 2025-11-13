@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Car, CarStatus, Match, MatchStatus, Salesperson, AppUser, CarFormData } from './types';
 import CarTable from './components/CarTable';
@@ -11,6 +10,7 @@ import ImportModal from './components/ImportModal';
 import AddFromAllocationModal from './components/AddFromAllocationModal';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ConfirmMatchDeleteModal from './components/ConfirmMatchDeleteModal';
+import ConfirmStockDeleteModal from './components/ConfirmStockDeleteModal';
 import StatisticsPage from './components/StatisticsPage';
 import { PlusIcon, ClipboardPlusIcon, UserIcon, UserGroupIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon, CogIcon } from './components/icons';
 import { useAuth } from './hooks/useAuth';
@@ -23,8 +23,10 @@ import LogoUploader from './components/LogoUploader';
 import ExportPage from './pages/ExportPage';
 
 
-type SortableKeys = keyof Car;
 type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons' | 'export';
+
+// FIX: Defined SortableKeys as a keyof Car to resolve TypeScript error.
+type SortableKeys = keyof Car;
 
 // UPDATE: Changed single-select filters to string arrays for multi-select functionality.
 interface Filters {
@@ -82,6 +84,7 @@ const App: React.FC = () => {
   const [deleteRequestContext, setDeleteRequestContext] = useState<'allocation' | 'stock' | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
+  const [carToUnstock, setCarToUnstock] = useState<Car | null>(null);
 
   // UI State
   const [activeView, setActiveView] = useState<View>('allocation');
@@ -320,6 +323,38 @@ const App: React.FC = () => {
   const handleCancelDelete = () => {
     setCarToDelete(null);
     setDeleteRequestContext(null);
+  };
+  
+  const handleDeleteStockRequest = (car: Car) => {
+    setCarToUnstock(car);
+  };
+
+  const handleConfirmDeleteStock = async () => {
+    if (!carToUnstock) return;
+    try {
+        const updatedCar = { 
+            ...carToUnstock, 
+            status: CarStatus.UNLOADED, 
+            stockInDate: undefined, 
+            stockLocation: undefined, 
+            stockNo: undefined 
+        };
+        const response = await fetch(`/api/cars/${carToUnstock.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(updatedCar)
+        });
+        if (!response.ok) throw new Error('Failed to remove car from stock');
+        await fetchData();
+    } catch (error: any) {
+        alert(`Error: ${error.message}`);
+    } finally {
+        setCarToUnstock(null);
+    }
+  };
+
+  const handleCancelDeleteStock = () => {
+    setCarToUnstock(null);
   };
 
   // Match CRUD
@@ -666,6 +701,7 @@ const App: React.FC = () => {
             onDelete={handleDeleteRequest}
             onEditMatch={handleOpenEditMatchModal}
             onDeleteMatch={handleDeleteMatchRequest}
+            onDeleteStockRequest={handleDeleteStockRequest}
             view={activeView}
             userRole={user.role}
           />
@@ -901,6 +937,12 @@ const App: React.FC = () => {
         onConfirm={handleConfirmDeleteMatch}
         match={matchToDelete}
         car={matchToDelete ? cars.find(c => c.id === matchToDelete.carId) || null : null}
+      />
+      <ConfirmStockDeleteModal
+        isOpen={!!carToUnstock}
+        onClose={handleCancelDeleteStock}
+        onConfirm={handleConfirmDeleteStock}
+        car={carToUnstock}
       />
     </div>
   );
