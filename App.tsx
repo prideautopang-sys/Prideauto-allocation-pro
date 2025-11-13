@@ -25,10 +25,8 @@ import ExportPage from './pages/ExportPage';
 
 type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons' | 'export';
 
-// FIX: Defined SortableKeys as a keyof Car to resolve TypeScript error.
 type SortableKeys = keyof Car;
 
-// UPDATE: Changed single-select filters to string arrays for multi-select functionality.
 interface Filters {
   searchTerm: string;
   startDate: string;
@@ -44,7 +42,6 @@ interface Filters {
   carStatus: string[];
 }
 
-// UPDATE: Changed initial filter values from 'All' to empty arrays for multi-select.
 const initialFilters: Filters = {
   searchTerm: '',
   startDate: '',
@@ -390,8 +387,6 @@ const App: React.FC = () => {
     const url = isEditing ? `/api/matches/${match.id}` : '/api/matches';
     const method = isEditing ? 'PUT' : 'POST';
 
-    // FIX: Enforce that a saleDate is required when the status is DELIVERED.
-    // This prevents errors and ensures the car status is correctly updated to 'Sold'.
     if (match.status === MatchStatus.DELIVERED && !match.saleDate) {
       alert('กรุณาระบุ "วันที่ตัดขาย" เมื่อสถานะเป็น "รับรถแล้ว"');
       return;
@@ -571,14 +566,12 @@ const App: React.FC = () => {
     const { searchTerm, startDate, endDate, ...selectFilters } = activeFilters;
     const lowercasedTerm = searchTerm.toLowerCase();
 
-    // Prepare date range boundaries once
     const start = startDate ? new Date(startDate) : null;
     if(start) start.setHours(0,0,0,0);
     const end = endDate ? new Date(endDate) : null;
     if(end) end.setHours(23,59,59,999);
     
     return sortedCars.filter(car => {
-      // Search term filter: Search both car and its associated match data
       const match = matchesByCarId.get(car.id!);
       const searchableValues = [
           ...Object.values(car),
@@ -591,36 +584,26 @@ const App: React.FC = () => {
       
       if (!matchesSearch) return false;
 
-      // Contextual date range filter
       if (start || end) {
           let dateToCompare: Date | null = null;
-
-          if (activeView === 'allocation') {
-              dateToCompare = car.allocationDate ? new Date(car.allocationDate) : null;
-          } else if (activeView === 'stock' || activeView === 'matching') {
-              dateToCompare = car.stockInDate ? new Date(car.stockInDate) : null;
-          } else if (activeView === 'sold') {
-              dateToCompare = match?.saleDate ? new Date(match.saleDate) : null;
-          }
-
+          if (activeView === 'allocation') dateToCompare = car.allocationDate ? new Date(car.allocationDate) : null;
+          else if (activeView === 'stock' || activeView === 'matching') dateToCompare = car.stockInDate ? new Date(car.stockInDate) : null;
+          else if (activeView === 'sold') dateToCompare = match?.saleDate ? new Date(match.saleDate) : null;
+          
           if (!dateToCompare) return false;
-
           const matchesStartDate = !start || dateToCompare >= start;
           const matchesEndDate = !end || dateToCompare <= end;
-          
           if (!matchesStartDate || !matchesEndDate) return false;
       }
       
-      // Multi-select filters
       for (const key of Object.keys(selectFilters) as Array<keyof typeof selectFilters>) {
           const filterValues = selectFilters[key];
           if (filterValues.length > 0) {
               if (key === 'matchStatus' || key === 'salesperson') {
-                  if (!match) return false; // If filtering by match status/salesperson, car must have a match
+                  if (!match) return false;
                   if (key === 'matchStatus' && !filterValues.includes(match.status)) return false;
                   if (key === 'salesperson' && !filterValues.includes(match.salesperson)) return false;
               } else if (key === 'carStatus') {
-                  // FIX: Correctly check against the 'status' property of the car object.
                   if (!filterValues.includes(car.status)) return false;
               } else {
                   const carValue = car[key as keyof Car];
@@ -637,10 +620,13 @@ const App: React.FC = () => {
   const availableForMatching = cars.filter(c => c.status === CarStatus.IN_STOCK);
   const allocatedCars = cars.filter(c => !c.stockInDate && c.status !== CarStatus.RESERVED && c.status !== CarStatus.SOLD);
   
-  // UPDATE: Correctly filter cars for the 'Stock' view by their status.
-  const stockCars = filteredCars.filter(c => c.status === CarStatus.IN_STOCK);
-  const matchingCars = filteredCars.filter(c => c.status === CarStatus.RESERVED);
-  const soldCars = filteredCars.filter(c => c.status === CarStatus.SOLD);
+  const stockCars = cars.filter(c => c.status === CarStatus.IN_STOCK);
+  const matchingCars = cars.filter(c => c.status === CarStatus.RESERVED);
+  const soldCars = cars.filter(c => c.status === CarStatus.SOLD);
+
+  const viewStockCars = filteredCars.filter(c => c.status === CarStatus.IN_STOCK);
+  const viewMatchingCars = filteredCars.filter(c => c.status === CarStatus.RESERVED);
+  const viewSoldCars = filteredCars.filter(c => c.status === CarStatus.SOLD);
 
   // Stats calculation
   const stats = useMemo(() => {
@@ -716,7 +702,7 @@ const App: React.FC = () => {
       case 'stock':
         return (
           <CarTable
-            cars={stockCars}
+            cars={viewStockCars}
             matches={matches}
             view={activeView}
             userRole={user!.role}
@@ -728,7 +714,7 @@ const App: React.FC = () => {
         );
       case 'matching':
         return <CarTable
-            cars={matchingCars}
+            cars={viewMatchingCars}
             matches={matches}
             view="matching"
             userRole={user!.role}
@@ -737,7 +723,7 @@ const App: React.FC = () => {
           />
       case 'sold':
         return <CarTable
-            cars={soldCars}
+            cars={viewSoldCars}
             matches={matches}
             view="sold"
             userRole={user!.role}
@@ -759,10 +745,10 @@ const App: React.FC = () => {
   };
   
   const navigationItems = [
-    { view: 'allocation', label: 'Allocation', icon: CollectionIcon, count: filteredCars.length },
-    { view: 'stock', label: 'Stock', icon: ArchiveIcon, count: stockCars.length },
-    { view: 'matching', label: 'Matching', icon: LinkIcon, count: matchingCars.length },
-    { view: 'sold', label: 'Sold', icon: ShoppingCartIcon, count: soldCars.length },
+    { view: 'allocation', label: 'Allocation', icon: CollectionIcon, count: activeView === 'allocation' ? filteredCars.length : cars.length },
+    { view: 'stock', label: 'Stock', icon: ArchiveIcon, count: activeView === 'stock' ? viewStockCars.length : stockCars.length },
+    { view: 'matching', label: 'Matching', icon: LinkIcon, count: activeView === 'matching' ? viewMatchingCars.length : matchingCars.length },
+    { view: 'sold', label: 'Sold', icon: ShoppingCartIcon, count: activeView === 'sold' ? viewSoldCars.length : soldCars.length },
     { view: 'stats', label: 'Statistics', icon: ChartBarIcon },
   ];
   
