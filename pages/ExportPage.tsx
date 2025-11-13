@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Car, Match, CarStatus } from '../types';
-import { ArrowLeftIcon } from '../components/icons';
+import { ArrowLeftIcon, DocumentDownloadIcon } from '../components/icons';
 import { exportToXLSX } from '../lib/export';
 
 interface ExportPageProps {
@@ -57,7 +57,6 @@ const ExportPage: React.FC<ExportPageProps> = ({ cars, matches, onBack }) => {
         car.allocationDate ? new Date(car.allocationDate).toLocaleDateString('en-CA') : '', // YYYY-MM-DD
         car.poType,
         car.price,
-        // New columns
         car.stockInDate ? new Date(car.stockInDate).toLocaleDateString('en-CA') : '',
         car.stockLocation || '',
         car.stockNo || '',
@@ -117,7 +116,6 @@ const ExportPage: React.FC<ExportPageProps> = ({ cars, matches, onBack }) => {
                 const saleDate = new Date(match.saleDate);
                 return (!start || saleDate >= start) && (!end || saleDate <= end);
             });
-
             fileName = `sold_cars`;
             break;
     }
@@ -147,37 +145,40 @@ const ExportPage: React.FC<ExportPageProps> = ({ cars, matches, onBack }) => {
     exportToXLSX(dataToExport, finalFileName);
   };
   
-  const ExportCard: React.FC<{
-      title: string;
-      description: string;
-      dateLabel: string;
-      onExport: () => void;
-      startDate: string;
-      endDate: string;
-      onDateChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-      startName: string;
-      endName: string;
-  }> = ({ title, description, dateLabel, onExport, startDate, endDate, onDateChange, startName, endName }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">{description}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{dateLabel} (เริ่มต้น)</label>
-                <input type="date" name={startName} value={startDate} onChange={onDateChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{dateLabel} (สิ้นสุด)</label>
-                <input type="date" name={endName} value={endDate} onChange={onDateChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-            </div>
-        </div>
-        <div className="flex justify-end">
-            <button onClick={onExport} className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                Export to XLSX
-            </button>
-        </div>
-    </div>
-  );
+  const exportOptions = [
+    {
+      type: 'allocated' as const,
+      title: 'All Allocated Cars',
+      description: 'All cars in the system, filterable by Allocation Date.',
+      dateLabel: 'Allocation Date',
+      startName: 'allocatedStart',
+      endName: 'allocatedEnd',
+    },
+    {
+      type: 'stock' as const,
+      title: 'In-Stock Cars',
+      description: "Only cars with 'In Stock' status, filterable by Stock-In Date.",
+      dateLabel: 'Stock-In Date',
+      startName: 'stockStart',
+      endName: 'stockEnd',
+    },
+    {
+      type: 'matching' as const,
+      title: 'Reserved (Matching) Cars',
+      description: 'Only reserved cars, filterable by Stock-In Date.',
+      dateLabel: 'Stock-In Date',
+      startName: 'matchingStart',
+      endName: 'matchingEnd',
+    },
+    {
+      type: 'sold' as const,
+      title: 'Sold Cars',
+      description: 'Only sold cars, filterable by Sale Date.',
+      dateLabel: 'Sale Date',
+      startName: 'soldStart',
+      endName: 'soldEnd',
+    }
+  ];
 
 
   return (
@@ -188,51 +189,54 @@ const ExportPage: React.FC<ExportPageProps> = ({ cars, matches, onBack }) => {
           <span className="ml-2">Back to Settings</span>
         </button>
       </div>
-      <div className="space-y-6">
-        <ExportCard 
-            title="รถที่ Allocation"
-            description="Export รถทุกคันในระบบ (รวมทุกสถานะ) โดยกรองตามวันที่ได้รับ Allocation"
-            dateLabel="Allocation Date"
-            onExport={() => handleExport('allocated')}
-            startDate={dates.allocatedStart}
-            endDate={dates.allocatedEnd}
-            onDateChange={handleDateChange}
-            startName="allocatedStart"
-            endName="allocatedEnd"
-        />
-        <ExportCard 
-            title="รถใน Stock"
-            description="Export เฉพาะรถที่อยู่ในสต็อก (สถานะ In Stock) โดยกรองตามวันที่นำเข้าสต็อก"
-            dateLabel="Stock-In Date"
-            onExport={() => handleExport('stock')}
-            startDate={dates.stockStart}
-            endDate={dates.stockEnd}
-            onDateChange={handleDateChange}
-            startName="stockStart"
-            endName="stockEnd"
-        />
-        <ExportCard 
-            title="รถที่ Matching"
-            description="Export เฉพาะรถที่ถูกจับคู่จองแล้ว (สถานะ Reserved) โดยกรองตามวันที่นำเข้าสต็อก"
-            dateLabel="Stock-In Date"
-            onExport={() => handleExport('matching')}
-            startDate={dates.matchingStart}
-            endDate={dates.matchingEnd}
-            onDateChange={handleDateChange}
-            startName="matchingStart"
-            endName="matchingEnd"
-        />
-        <ExportCard 
-            title="รถที่ตัดขายแล้ว"
-            description="Export เฉพาะรถที่ขายแล้ว (สถานะ Sold) โดยกรองตามวันที่ตัดขาย"
-            dateLabel="Sale Date"
-            onExport={() => handleExport('sold')}
-            startDate={dates.soldStart}
-            endDate={dates.soldEnd}
-            onDateChange={handleDateChange}
-            startName="soldStart"
-            endName="soldEnd"
-        />
+      
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md divide-y divide-gray-200 dark:divide-gray-700">
+        {exportOptions.map(option => (
+            <div key={option.type} className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                {/* Column 1: Title and Description */}
+                <div className="md:col-span-5">
+                    <h3 className="font-bold text-gray-900 dark:text-white">{option.title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{option.description}</p>
+                </div>
+
+                {/* Column 2: Date Pickers */}
+                <div className="md:col-span-5 grid grid-cols-2 gap-2">
+                    <div>
+                        <label htmlFor={`${option.startName}-date`} className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{option.dateLabel} (From)</label>
+                        <input 
+                            type="date" 
+                            id={`${option.startName}-date`}
+                            name={option.startName} 
+                            value={dates[option.startName as keyof typeof dates]} 
+                            onChange={handleDateChange} 
+                            className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor={`${option.endName}-date`} className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{option.dateLabel} (To)</label>
+                        <input 
+                            type="date" 
+                            id={`${option.endName}-date`}
+                            name={option.endName} 
+                            value={dates[option.endName as keyof typeof dates]} 
+                            onChange={handleDateChange} 
+                            className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                        />
+                    </div>
+                </div>
+                
+                {/* Column 3: Export Button */}
+                <div className="md:col-span-2 flex justify-start md:justify-end">
+                    <button 
+                        onClick={() => handleExport(option.type)} 
+                        className="w-full md:w-auto inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                    >
+                        <DocumentDownloadIcon />
+                        <span className="ml-2">Export</span>
+                    </button>
+                </div>
+            </div>
+        ))}
       </div>
     </>
   );
