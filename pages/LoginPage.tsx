@@ -45,7 +45,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ logo }) => {
 
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Car Allocation Pro</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">Sign in to manage your vehicle allocations</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">Manage your vehicle allocations</p>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
