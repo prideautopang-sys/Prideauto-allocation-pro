@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Car, CarStatus, Match } from '../types';
-import { EditIcon, TrashIcon, UnlinkIcon, ArchiveOutIcon, ArchiveInIcon, LinkIcon } from './icons';
+import { EditIcon, TrashIcon, UnlinkIcon, ArchiveOutIcon, ArchiveInIcon, LinkIcon, EyeIcon } from './icons';
 import StatusBadge from './StatusBadge';
 
 type UserRole = 'executive' | 'admin' | 'user';
@@ -223,103 +223,111 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                   </div>
 
                   {/* Right Side: Actions */}
-                   {canEdit && 
                     <div className="sm:pl-4 sm:border-l dark:border-gray-700 flex items-start justify-end shrink-0">
-                        {view === 'allocation' ? (
-                            <div className="grid grid-cols-2 grid-rows-3 gap-1">
-                                {/* Row 1 */}
-                                <button onClick={handleEdit} title="Edit Car" className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200 p-2 rounded-full hover:bg-green-50 dark:hover:bg-green-800/50">
-                                    <EditIcon />
-                                </button>
-                                {showCarDeleteButton ? (
-                                    <button
-                                        onClick={handleDelete}
-                                        disabled={isSold}
-                                        title={isSold ? "Cannot delete a sold car" : "Delete Car"}
-                                        className={`p-2 rounded-full transition-colors ${
-                                            isSold
-                                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                                            : 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50'
-                                        }`}
-                                    >
-                                        <TrashIcon />
-                                    </button>
-                                ) : ( <div className="w-9 h-9" /> )}
-                                
-                                {/* Row 2 */}
-                                <button 
-                                    onClick={handleAddToStock} 
-                                    disabled={!canBeStocked}
-                                    title={canBeStocked ? "นำรถเข้า Stock" : "This car cannot be added to stock"} 
-                                    className={`p-2 rounded-full transition-colors ${
-                                        canBeStocked 
-                                        ? 'text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-800/50'
-                                        : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                                    }`}
-                                >
-                                    <ArchiveInIcon />
-                                </button>
-                                <button 
-                                    onClick={handleUnstock} 
-                                    disabled={!canBeUnstocked}
-                                    title={canBeUnstocked ? "นำรถออกจาก Stock" : "Cannot remove from stock"} 
-                                    className={`p-2 rounded-full transition-colors ${
-                                        canBeUnstocked 
-                                        ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50'
-                                        : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                                    }`}
-                                >
-                                    <ArchiveOutIcon />
-                                </button>
+                        {userRole !== 'user' ? (
+                            <>
+                                {view === 'allocation' ? (
+                                    <div className="grid grid-cols-2 grid-rows-3 gap-1">
+                                        {/* Row 1 */}
+                                        <button onClick={handleEdit} title="Edit Car" className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200 p-2 rounded-full hover:bg-green-50 dark:hover:bg-green-800/50">
+                                            <EditIcon />
+                                        </button>
+                                        {showCarDeleteButton ? (
+                                            <button
+                                                onClick={handleDelete}
+                                                disabled={isSold}
+                                                title={isSold ? "Cannot delete a sold car" : "Delete Car"}
+                                                className={`p-2 rounded-full transition-colors ${
+                                                    isSold
+                                                    ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                                    : 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50'
+                                                }`}
+                                            >
+                                                <TrashIcon />
+                                            </button>
+                                        ) : ( <div className="w-9 h-9" /> )}
+                                        
+                                        {/* Row 2 */}
+                                        <button 
+                                            onClick={handleAddToStock} 
+                                            disabled={!canBeStocked}
+                                            title={canBeStocked ? "นำรถเข้า Stock" : "This car cannot be added to stock"} 
+                                            className={`p-2 rounded-full transition-colors ${
+                                                canBeStocked 
+                                                ? 'text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-800/50'
+                                                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            <ArchiveInIcon />
+                                        </button>
+                                        <button 
+                                            onClick={handleUnstock} 
+                                            disabled={!canBeUnstocked}
+                                            title={canBeUnstocked ? "นำรถออกจาก Stock" : "Cannot remove from stock"} 
+                                            className={`p-2 rounded-full transition-colors ${
+                                                canBeUnstocked 
+                                                ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50'
+                                                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            <ArchiveOutIcon />
+                                        </button>
 
-                                {/* Row 3 */}
-                                <button 
-                                    onClick={handleMatchCar} 
-                                    disabled={car.status !== CarStatus.IN_STOCK}
-                                    title={car.status === CarStatus.IN_STOCK ? "จับคู่รถ" : "Car must be 'In Stock' to be matched"}
-                                    className={`p-2 rounded-full transition-colors ${
-                                        car.status === CarStatus.IN_STOCK
-                                        ? 'text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 hover:bg-sky-50 dark:hover:bg-sky-800/50'
-                                        : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                                    }`}>
-                                    <LinkIcon />
-                                </button>
-                                <button 
-                                    onClick={handleUnlink} 
-                                    disabled={!match}
-                                    title={match ? "ยกเลิกการจับคู่" : "No match to unlink"} 
-                                    className={`p-2 rounded-full transition-colors ${
-                                        match
-                                        ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50'
-                                        : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                                    }`}
-                                >
-                                    <UnlinkIcon />
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="flex items-center space-x-1">
-                                <button onClick={handleEdit} title={editTitle} className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
-                                    <EditIcon />
-                                </button>
-                                {(showCarDeleteButton || showMatchDeleteButton) && (
-                                    <button
-                                        onClick={handleDelete}
-                                        disabled={isSold && view !== 'matching'}
-                                        title={isSold && view !== 'matching' ? "Cannot delete a sold car" : mainActionTitle}
-                                        className={`p-2 rounded-full transition-colors ${
-                                            isSold && view !== 'matching'
-                                            ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                            : mainActionClassName
-                                        }`}
-                                    >
-                                        <MainActionIcon />
-                                    </button>
+                                        {/* Row 3 */}
+                                        <button 
+                                            onClick={handleMatchCar} 
+                                            disabled={car.status !== CarStatus.IN_STOCK}
+                                            title={car.status === CarStatus.IN_STOCK ? "จับคู่รถ" : "Car must be 'In Stock' to be matched"}
+                                            className={`p-2 rounded-full transition-colors ${
+                                                car.status === CarStatus.IN_STOCK
+                                                ? 'text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 hover:bg-sky-50 dark:hover:bg-sky-800/50'
+                                                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                            }`}>
+                                            <LinkIcon />
+                                        </button>
+                                        <button 
+                                            onClick={handleUnlink} 
+                                            disabled={!match}
+                                            title={match ? "ยกเลิกการจับคู่" : "No match to unlink"} 
+                                            className={`p-2 rounded-full transition-colors ${
+                                                match
+                                                ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50'
+                                                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            <UnlinkIcon />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center space-x-1">
+                                        <button onClick={handleEdit} title={editTitle} className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
+                                            <EditIcon />
+                                        </button>
+                                        {(showCarDeleteButton || showMatchDeleteButton) && (
+                                            <button
+                                                onClick={handleDelete}
+                                                disabled={isSold && view !== 'matching'}
+                                                title={isSold && view !== 'matching' ? "Cannot delete a sold car" : mainActionTitle}
+                                                className={`p-2 rounded-full transition-colors ${
+                                                    isSold && view !== 'matching'
+                                                    ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                                    : mainActionClassName
+                                                }`}
+                                            >
+                                                <MainActionIcon />
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
+                            </>
+                        ) : (
+                            <div className="flex items-center">
+                                <button onClick={handleEdit} title="View Details" className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
+                                    <EyeIcon />
+                                </button>
                             </div>
                         )}
                     </div>
-                  }
                 </div>
               )})}
             </div>

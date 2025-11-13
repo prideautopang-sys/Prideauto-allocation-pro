@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Match, Car, MatchStatus } from '../types';
-import { EditIcon } from './icons';
+import { EditIcon, EyeIcon } from './icons';
 
 type UserRole = 'executive' | 'admin' | 'user';
 
@@ -40,7 +40,7 @@ const SoldCarTable: React.FC<SoldCarTableProps> = ({ soldData, onEditMatch, user
             <th scope="col" className={thClasses}>ลูกค้า / เซลล์</th>
             <th scope="col" className={thClasses}>Sale Details</th>
             <th scope="col" className={thClasses}>Price</th>
-            {userRole !== 'user' && <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>}
+            <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -88,15 +88,19 @@ const SoldCarTable: React.FC<SoldCarTableProps> = ({ soldData, onEditMatch, user
                 <td className={`${tdClasses} font-semibold text-gray-900 dark:text-white whitespace-nowrap`}>
                   {car.price.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
-                {userRole !== 'user' && 
-                  <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium align-top">
+                <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium align-top">
                     <div className="flex items-center justify-end">
-                      <button onClick={() => onEditMatch(match)} title="Edit Sale Info" className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
-                        <EditIcon />
-                      </button>
+                      {userRole !== 'user' ? (
+                        <button onClick={() => onEditMatch(match)} title="Edit Sale Info" className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
+                            <EditIcon />
+                        </button>
+                      ) : (
+                        <button onClick={() => onEditMatch(match)} title="View Details" className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
+                            <EyeIcon />
+                        </button>
+                      )}
                     </div>
-                  </td>
-                }
+                </td>
               </tr>
             );
           })}

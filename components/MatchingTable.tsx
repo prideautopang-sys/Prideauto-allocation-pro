@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Match, Car } from '../types';
-import { EditIcon, UnlinkIcon } from './icons';
+import { EditIcon, UnlinkIcon, EyeIcon } from './icons';
 
 type UserRole = 'executive' | 'admin' | 'user';
 
@@ -38,7 +38,7 @@ const MatchingTable: React.FC<MatchingTableProps> = ({ matches, cars, onEdit, on
             <th scope="col" className={thClasses}>รายละเอียดการขาย</th>
             <th scope="col" className={thClasses}>สถานะ</th>
             <th scope="col" className={thClasses}>หมายเหตุ</th>
-            {userRole !== 'user' && <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>}
+            <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -76,18 +76,24 @@ const MatchingTable: React.FC<MatchingTableProps> = ({ matches, cars, onEdit, on
                     </span>
                 </td>
                 <td className={`${tdClasses} max-w-sm whitespace-pre-wrap`}>{match.notes}</td>
-                {userRole !== 'user' &&
-                  <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium align-top">
-                    <div className="flex items-center justify-end space-x-1">
-                      <button onClick={() => onEdit(match)} title="Edit Match" className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
-                        <EditIcon />
-                      </button>
-                      <button onClick={() => onDelete(match)} title="Unlink Match" className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-800/50">
-                        <UnlinkIcon />
-                      </button>
+                <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium align-top">
+                    <div className="flex items-center justify-end">
+                        {userRole !== 'user' ? (
+                            <div className="flex items-center justify-end space-x-1">
+                                <button onClick={() => onEdit(match)} title="Edit Match" className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
+                                <EditIcon />
+                                </button>
+                                <button onClick={() => onDelete(match)} title="Unlink Match" className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-800/50">
+                                <UnlinkIcon />
+                                </button>
+                            </div>
+                        ) : (
+                            <button onClick={() => onEdit(match)} title="View Details" className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
+                                <EyeIcon />
+                            </button>
+                        )}
                     </div>
-                  </td>
-                }
+                </td>
               </tr>
             );
           })}
