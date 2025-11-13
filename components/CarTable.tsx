@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Car, CarStatus, Match } from '../types';
-import { EditIcon, TrashIcon, UnlinkIcon, ArchiveOutIcon } from './icons';
+import { EditIcon, TrashIcon, UnlinkIcon, ArchiveOutIcon, ArchiveInIcon, LinkIcon } from './icons';
 import StatusBadge from './StatusBadge';
 
 type UserRole = 'executive' | 'admin' | 'user';
@@ -16,6 +16,7 @@ interface CarTableProps {
   onEditMatch?: (match: Match) => void;
   onDeleteMatch?: (match: Match) => void;
   onDeleteStockRequest?: (car: Car) => void;
+  onMatchCar?: (car: Car) => void;
 }
 
 const formatDate = (dateString?: string | null): string => {
@@ -29,7 +30,7 @@ const formatDate = (dateString?: string | null): string => {
     });
 }
 
-const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, onEditMatch, onDeleteMatch, onDeleteStockRequest, view, userRole }) => {
+const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, onEditMatch, onDeleteMatch, onDeleteStockRequest, onMatchCar, view, userRole }) => {
   const canEdit = userRole !== 'user';
   
   // FIX: Explicitly type the Map to fix type inference issues with `match` being `unknown`.
@@ -79,6 +80,12 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                 const handleUnstock = () => {
                     if (car && onDeleteStockRequest) {
                         onDeleteStockRequest(car);
+                    }
+                }
+                
+                const handleMatchCar = () => {
+                    if (onMatchCar) {
+                        onMatchCar(car);
                     }
                 }
 
@@ -211,13 +218,11 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                    {canEdit && 
                     <div className="sm:pl-4 sm:border-l dark:border-gray-700 flex items-start justify-end shrink-0">
                         {view === 'allocation' ? (
-                            <div className="grid grid-cols-2 gap-1 place-items-center">
-                                {/* Edit Button */}
-                                <button onClick={handleEdit} title={editTitle} className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
+                            <div className="grid grid-cols-2 grid-rows-3 gap-1">
+                                {/* Row 1 */}
+                                <button onClick={handleEdit} title="Edit Car" className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200 p-2 rounded-full hover:bg-green-50 dark:hover:bg-green-800/50">
                                     <EditIcon />
                                 </button>
-
-                                {/* Delete Button */}
                                 {showCarDeleteButton ? (
                                     <button
                                         onClick={handleDelete}
@@ -231,36 +236,51 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                                     >
                                         <TrashIcon />
                                     </button>
-                                ) : (
-                                    <div className="w-9 h-9" /> // Placeholder for alignment
-                                )}
+                                ) : ( <div className="w-9 h-9" /> )}
                                 
-                                {/* Unlink Button */}
+                                {/* Row 2 */}
                                 <button 
-                                    onClick={handleUnlink} 
-                                    disabled={!match}
-                                    title={match ? "ลบการ Matching" : "No match to unlink"} 
-                                    className={`p-2 rounded-full transition-colors ${
-                                        match
-                                        ? 'text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-200 hover:bg-orange-50 dark:hover:bg-orange-800/50'
-                                        : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                                    }`}
-                                >
-                                    <UnlinkIcon />
+                                    onClick={handleEdit} 
+                                    title="นำรถเข้า Stock" 
+                                    className="p-2 rounded-full transition-colors text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-800/50">
+                                    <ArchiveInIcon />
                                 </button>
-                                
-                                {/* Unstock Button */}
                                 <button 
                                     onClick={handleUnstock} 
                                     disabled={!canBeUnstocked}
-                                    title={canBeUnstocked ? "ลบการ Stock" : "Cannot remove from stock"} 
+                                    title={canBeUnstocked ? "นำรถออกจาก Stock" : "Cannot remove from stock"} 
                                     className={`p-2 rounded-full transition-colors ${
                                         canBeUnstocked 
-                                        ? 'text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-800/50'
+                                        ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50'
                                         : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                                     }`}
                                 >
                                     <ArchiveOutIcon />
+                                </button>
+
+                                {/* Row 3 */}
+                                <button 
+                                    onClick={handleMatchCar} 
+                                    disabled={car.status !== CarStatus.IN_STOCK}
+                                    title={car.status === CarStatus.IN_STOCK ? "จับคู่รถ" : "Car must be 'In Stock' to be matched"}
+                                    className={`p-2 rounded-full transition-colors ${
+                                        car.status === CarStatus.IN_STOCK
+                                        ? 'text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 hover:bg-sky-50 dark:hover:bg-sky-800/50'
+                                        : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                    }`}>
+                                    <LinkIcon />
+                                </button>
+                                <button 
+                                    onClick={handleUnlink} 
+                                    disabled={!match}
+                                    title={match ? "ยกเลิกการจับคู่" : "No match to unlink"} 
+                                    className={`p-2 rounded-full transition-colors ${
+                                        match
+                                        ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50'
+                                        : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                    }`}
+                                >
+                                    <UnlinkIcon />
                                 </button>
                             </div>
                         ) : (

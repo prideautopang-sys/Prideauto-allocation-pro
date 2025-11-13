@@ -80,6 +80,7 @@ const App: React.FC = () => {
   
   // Editing/Deleting State
   const [editingCar, setEditingCar] = useState<Car | null>(null);
+  const [carToMatch, setCarToMatch] = useState<Car | null>(null);
   const [carToDelete, setCarToDelete] = useState<Car | null>(null);
   const [deleteRequestContext, setDeleteRequestContext] = useState<'allocation' | 'stock' | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
@@ -360,14 +361,22 @@ const App: React.FC = () => {
   // Match CRUD
   const handleOpenAddMatchModal = () => {
     setEditingMatch(null);
+    setCarToMatch(null);
     setIsMatchFormModalOpen(true);
   };
 
   const handleOpenEditMatchModal = (match: Match) => {
     setEditingMatch(match);
+    setCarToMatch(null);
     setIsMatchFormModalOpen(true);
   };
   
+  const handleOpenAddMatchModalForCar = (car: Car) => {
+    setEditingMatch(null);
+    setCarToMatch(car);
+    setIsMatchFormModalOpen(true);
+  };
+
   const handleSaveMatch = async (match: Match) => {
     const isEditing = !!editingMatch;
     const url = isEditing ? `/api/matches/${match.id}` : '/api/matches';
@@ -381,34 +390,31 @@ const App: React.FC = () => {
     }
 
     try {
-      // First, save the match
       const matchResponse = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify(match)
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(match)
       });
       if (!matchResponse.ok) throw new Error('Failed to save match');
 
-      // Then, update the car's status based on the match
-      const newCarStatus = (match.status === MatchStatus.DELIVERED && match.saleDate)
-          ? CarStatus.SOLD 
-          : CarStatus.RESERVED;
-      
       const carToUpdate = cars.find(c => c.id === match.carId);
-      if (carToUpdate && carToUpdate.status !== newCarStatus) {
-          const carResponse = await fetch(`/api/cars/${match.carId}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ ...carToUpdate, status: newCarStatus })
-          });
-          if (!carResponse.ok) throw new Error('Failed to update car status');
+      if (carToUpdate) {
+        const newStatus = (match.status === MatchStatus.DELIVERED && match.saleDate) ? CarStatus.SOLD : CarStatus.RESERVED;
+        if (carToUpdate.status !== newStatus) {
+            const updatedCar = { ...carToUpdate, status: newStatus };
+            const carResponse = await fetch(`/api/cars/${updatedCar.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(updatedCar)
+            });
+            if (!carResponse.ok) throw new Error('Failed to update car status after saving match');
+        }
       }
-
-      await fetchData(); // Refetch all data
-      setIsMatchFormModalOpen(false);
-
+      
+      await fetchData();
+      handleCloseModals();
     } catch (error: any) {
-        alert(`Error: ${error.message}`);
+      alert(`Error: ${error.message}`);
     }
   };
   
@@ -420,24 +426,25 @@ const App: React.FC = () => {
     if (!matchToDelete) return;
 
     try {
-        // Delete the match
-        const matchResponse = await fetch(`/api/matches/${matchToDelete.id}`, {
+        const deleteResponse = await fetch(`/api/matches/${matchToDelete.id}`, { 
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${token}` } 
         });
-        if (!matchResponse.ok) throw new Error('Failed to delete match');
+        if (!deleteResponse.ok) throw new Error('Failed to delete match');
 
-        // Revert car status to In Stock
         const carToUpdate = cars.find(c => c.id === matchToDelete.carId);
         if (carToUpdate) {
-            const carResponse = await fetch(`/api/cars/${matchToDelete.carId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ ...carToUpdate, status: CarStatus.IN_STOCK })
-            });
-            if (!carResponse.ok) throw new Error('Failed to update car status');
+            const newStatus = carToUpdate.stockInDate ? CarStatus.IN_STOCK : CarStatus.UNLOADED;
+            if (carToUpdate.status !== newStatus) {
+                const updatedCar = { ...carToUpdate, status: newStatus };
+                const carResponse = await fetch(`/api/cars/${updatedCar.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(updatedCar)
+                });
+                if (!carResponse.ok) throw new Error('Failed to update car status after deleting match');
+            }
         }
-        
         await fetchData();
     } catch (error: any) {
         alert(`Error: ${error.message}`);
@@ -449,8 +456,43 @@ const App: React.FC = () => {
   const handleCancelDeleteMatch = () => {
     setMatchToDelete(null);
   };
+  
+  const handleBatchImport = async (newCars: Car[]) => {
+      try {
+          const response = await fetch('/api/cars/batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify(newCars)
+          });
+          if (!response.ok) {
+              const err = await response.json();
+              throw new Error(err.message || 'Failed to import cars');
+          }
+          await fetchData();
+          setIsImportModalOpen(false);
+      } catch (error: any) {
+          alert(`Error importing cars: ${error.message}`);
+      }
+  };
+  
+  const handleBatchAddToStock = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => {
+      try {
+          const response = await fetch('/api/cars/batch-stock', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ carIds, stockInDate, stockLocation, stockNo })
+          });
+          if (!response.ok) {
+              const err = await response.json();
+              throw new Error(err.message || 'Failed to add cars to stock');
+          }
+          await fetchData();
+          setIsAddFromAllocationModalOpen(false);
+      } catch (error: any) {
+          alert(`Error: ${error.message}`);
+      }
+  };
 
-  // Other Modals
   const handleCloseModals = () => {
     setIsFormModalOpen(false);
     setIsImportModalOpen(false);
@@ -458,492 +500,348 @@ const App: React.FC = () => {
     setIsMatchFormModalOpen(false);
     setEditingCar(null);
     setEditingMatch(null);
+    setCarToMatch(null);
   };
 
-  const handleImportCars = async (newCars: Car[]) => {
-    let successCount = 0;
-    let duplicateCount = 0;
-
-    for (const car of newCars) {
-        const response = await fetch('/api/cars', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(car)
-        });
-        if (response.ok) {
-            successCount++;
-        } else if (response.status === 409) {
-            duplicateCount++;
-        }
-    }
-    
-    let message = `เพิ่มรถใหม่สำเร็จ ${successCount} รายการ`;
-    if (duplicateCount > 0) {
-      message += `\nข้าม ${duplicateCount} รายการเนื่องจากเลขตัวถังซ้ำกับรถที่มีอยู่แล้วในระบบ`;
-    }
-    alert(message);
-
-    if (successCount > 0) {
-      await fetchData();
-    }
-    handleCloseModals();
-  };
-  
-  const handleAddFromAllocation = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => {
-      const updatePromises = cars
-        .filter(car => carIds.includes(car.id!))
-        .map(car => {
-          const updatedCar = { ...car, stockInDate, stockLocation, status: CarStatus.IN_STOCK, stockNo: stockNo || undefined };
-          return fetch(`/api/cars/${car.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(updatedCar)
-          });
-        });
+  // --- Filtering & Sorting Logic ---
+  const sortedCars = useMemo(() => {
+    return [...cars].sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
       
-      try {
-        await Promise.all(updatePromises);
-        await fetchData();
-        handleCloseModals();
-      } catch (error) {
-        alert("An error occurred while adding cars to stock.");
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
       }
-    };
+      if (aValue > bValue) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [cars, sortConfig]);
 
-  // Filtering and Sorting
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setStagedFilters(prev => ({ ...prev, [name]: value }));
+  const filteredCars = useMemo(() => {
+    const { searchTerm, startDate, endDate, ...selectFilters } = activeFilters;
+    const lowercasedTerm = searchTerm.toLowerCase();
+    
+    return sortedCars.filter(car => {
+      // Search term filter
+      const matchesSearch = searchTerm === '' ||
+        Object.values(car).some(val =>
+          String(val).toLowerCase().includes(lowercasedTerm)
+        );
+      if (!matchesSearch) return false;
+
+      // Date range filter (on allocationDate)
+      const allocationDate = new Date(car.allocationDate);
+      const matchesStartDate = !startDate || allocationDate >= new Date(startDate);
+      const matchesEndDate = !endDate || allocationDate <= new Date(endDate);
+      if (!matchesStartDate || !matchesEndDate) return false;
+      
+      // Multi-select filters
+      for (const key of Object.keys(selectFilters) as Array<keyof typeof selectFilters>) {
+          const filterValues = selectFilters[key];
+          if (filterValues.length > 0) {
+              if (key === 'matchStatus' || key === 'salesperson') {
+                  const match = matches.find(m => m.carId === car.id);
+                  if (!match) return false; // If filtering by match status/salesperson, car must have a match
+                  if (key === 'matchStatus' && !filterValues.includes(match.status)) return false;
+                  if (key === 'salesperson' && !filterValues.includes(match.salesperson)) return false;
+              } else {
+                  const carValue = car[key as keyof Car];
+                  if (carValue === null || carValue === undefined) return false;
+                  if (!filterValues.includes(String(carValue))) return false;
+              }
+          }
+      }
+
+      return true;
+    });
+  }, [sortedCars, activeFilters, matches]);
+
+  const matchesByCarId = useMemo(() => new Map(matches.map(match => [match.carId, match])), [matches]);
+
+  const availableForMatching = cars.filter(c => c.status === CarStatus.IN_STOCK);
+  const allocatedCars = cars.filter(c => !c.stockInDate && c.status !== CarStatus.RESERVED && c.status !== CarStatus.SOLD);
+  const stockCars = filteredCars.filter(c => c.stockInDate && c.status !== CarStatus.RESERVED && c.status !== CarStatus.SOLD);
+  const matchingCars = filteredCars.filter(c => c.status === CarStatus.RESERVED);
+  const soldCars = filteredCars.filter(c => c.status === CarStatus.SOLD);
+  
+  const soldCarData = useMemo(() => {
+    return soldCars.map(car => ({
+      car,
+      match: matchesByCarId.get(car.id!),
+    })).filter(item => item.match);
+  }, [soldCars, matchesByCarId]);
+
+
+  // Stats calculation
+  const stats = useMemo(() => {
+    const carStats = cars.reduce((acc, car) => {
+      acc[car.status] = (acc[car.status] || 0) + 1;
+      return acc;
+    }, {} as Record<CarStatus, number>);
+    return { ...carStats, total: cars.length };
+  }, [cars]);
+
+
+  const handleFilterChange = (filterName: keyof Filters, value: any) => {
+    setStagedFilters(prev => ({ ...prev, [filterName]: value }));
   };
   
-  // UPDATE: Generic handler for all multi-select filters.
-  const handleMultiSelectChange = (filterName: keyof Filters) => (selected: string[]) => {
-    setStagedFilters(prev => ({ ...prev, [filterName]: selected }));
+  const applyFilters = () => {
+      setActiveFilters(stagedFilters);
   };
   
-  const handleApplyFilters = () => {
-    setActiveFilters(stagedFilters);
-  }
-
-  const handleClearFilters = () => {
+  const clearFilters = () => {
       setStagedFilters(initialFilters);
       setActiveFilters(initialFilters);
   };
 
+  // --- Filter Options ---
   const filterOptions = useMemo(() => {
-    const unique = (key: keyof Car) => [...new Set(cars.map(c => c[key]).filter(Boolean))] as string[];
+    const createOptions = (key: keyof Car) => [...new Set(cars.map(c => c[key]).filter(Boolean))] as string[];
     return {
-        dealerCodes: unique('dealerCode'),
-        models: unique('model'),
-        colors: unique('color'),
-        carTypes: unique('carType'),
-        poTypes: unique('poType'),
-        stockLocations: unique('stockLocation'),
-        salespersons: [...new Set(allSalespersons.map(s => s.name))],
+        dealerCode: createOptions('dealerCode'),
+        model: createOptions('model'),
+        color: createOptions('color'),
+        carType: createOptions('carType'),
+        poType: createOptions('poType'),
+        stockLocation: createOptions('stockLocation'),
+        carStatus: Object.values(CarStatus),
+        matchStatus: Object.values(MatchStatus),
+        salesperson: [...new Set(matches.map(m => m.salesperson).filter(Boolean))],
     };
-  }, [cars, allSalespersons]);
-
-
-  // Memoized Data for Views
-  const allocatedCars = useMemo(() => cars, [cars]);
-  const stockCars = useMemo(() => cars.filter(car => car.stockInDate && car.status !== CarStatus.SOLD), [cars]);
-  const matchingCarsData = useMemo(() => cars.filter(car => car.status === CarStatus.RESERVED), [cars]);
-  const soldCarsData = useMemo(() => cars.filter(car => car.status === CarStatus.SOLD), [cars]);
-
-  const carsNotInStock = useMemo(() => cars.filter(car => !car.stockInDate), [cars]);
-  const carsInStockForMatching = useMemo(() => cars.filter(c => c.status === CarStatus.IN_STOCK), [cars]);
-  
-  const matchForEditingCar = useMemo(() => {
-    if (!editingCar) return null;
-    return matches.find(m => m.carId === editingCar.id) || null;
-  }, [editingCar, matches]);
-
-
-  const processedCars = useMemo(() => {
-    let sourceCars: Car[] = [];
-    if (activeView === 'allocation') sourceCars = allocatedCars;
-    else if (activeView === 'stock') sourceCars = stockCars;
-    else if (activeView === 'matching') sourceCars = matchingCarsData;
-    else if (activeView === 'sold') sourceCars = soldCarsData;
-    else return [];
-
-    let filtered = sourceCars.filter(car => {
-      const { searchTerm, startDate, endDate, dealerCode, model, color, carType, poType, stockLocation, matchStatus, salesperson, carStatus } = activeFilters;
-      
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = searchTerm ? (
-        Object.values(car).some(val => String(val).toLowerCase().includes(searchLower))
-      ) : true;
-
-      // UPDATE: Filtering logic updated to handle arrays for all multi-select filters.
-      const matchesDealer = dealerCode.length === 0 || (car.dealerCode && dealerCode.includes(car.dealerCode));
-      const matchesModel = model.length === 0 || (car.model && model.includes(car.model));
-      const matchesColor = color.length === 0 || (car.color && color.includes(car.color));
-      const matchesCarType = carType.length === 0 || (car.carType && carType.includes(car.carType));
-      const matchesPoType = poType.length === 0 || (car.poType && poType.includes(car.poType));
-      const matchesStockLocation = (activeView === 'stock' || activeView === 'matching' || activeView === 'sold') ? (stockLocation.length === 0 || (car.stockLocation && stockLocation.includes(car.stockLocation))) : true;
-      
-      const match = matches.find(m => m.carId === car.id);
-      const matchesMatchStatus = (activeView === 'matching')
-        ? (matchStatus.length === 0 || (match && matchStatus.includes(match.status)))
-        : true;
-        
-      const matchesSalesperson = (activeView === 'sold')
-        ? (salesperson.length === 0 || (match && salesperson.includes(match.salesperson)))
-        : true;
-
-      let matchesDate = true;
-      if (startDate || endDate) {
-          let dateField: string | undefined;
-          if (activeView === 'allocation') dateField = car.allocationDate;
-          if (activeView === 'stock' || activeView === 'matching') dateField = car.stockInDate;
-          if (activeView === 'sold') {
-            const saleMatch = matches.find(m => m.carId === car.id);
-            dateField = saleMatch?.saleDate;
-          }
-
-          if (!dateField) {
-              matchesDate = false;
-          } else {
-              const carDate = new Date(dateField);
-              carDate.setHours(0, 0, 0, 0); 
-              const start = startDate ? new Date(startDate) : null;
-              if (start) start.setHours(0, 0, 0, 0);
-              const end = endDate ? new Date(endDate) : null;
-              if (end) end.setHours(0, 0, 0, 0);
-              matchesDate = (!start || carDate >= start) && (!end || carDate <= end);
-          }
-      }
-      
-      const matchesCarStatus = (activeView === 'allocation' || activeView === 'stock')
-        ? (
-            carStatus.length === 0 ||
-            carStatus.includes(car.status) ||
-            (car.status === CarStatus.RESERVED && match && carStatus.includes(match.status))
-          )
-        : true;
-
-      return matchesSearch && matchesDealer && matchesModel && matchesColor && matchesCarType && matchesPoType && matchesStockLocation && matchesDate && matchesMatchStatus && matchesSalesperson && matchesCarStatus;
-    });
-
-    const { key, direction } = sortConfig;
-    filtered.sort((a, b) => {
-        const valA = a[key];
-        const valB = b[key];
-        if (valA === undefined || valA === null) return 1;
-        if (valB === undefined || valB === null) return -1;
-
-        let comparison = 0;
-        if (key === 'allocationDate' || key === 'stockInDate') {
-            comparison = new Date(valA as string).getTime() - new Date(valB as string).getTime();
-        } else if (key === 'price') {
-            comparison = (valA as number) - (valB as number);
-        } else {
-            comparison = String(valA).localeCompare(String(valB));
-        }
-        return direction === 'ascending' ? comparison : -comparison;
-    });
-    return filtered;
-  }, [allocatedCars, stockCars, matchingCarsData, soldCarsData, activeFilters, sortConfig, activeView, matches]);
-  
-
-  const stats = useMemo(() => {
-    const carStats = cars.reduce((acc, car) => {
-        acc[car.status] = (acc[car.status] || 0) + 1;
-        return acc;
-    }, {} as Record<CarStatus, number>);
-
-    return {
-      total: cars.length,
-      [CarStatus.WAITING_FOR_TRAILER]: carStats[CarStatus.WAITING_FOR_TRAILER] || 0,
-      [CarStatus.ON_TRAILER]: carStats[CarStatus.ON_TRAILER] || 0,
-      [CarStatus.UNLOADED]: carStats[CarStatus.UNLOADED] || 0,
-      [CarStatus.IN_STOCK]: carStats[CarStatus.IN_STOCK] || 0,
-      [CarStatus.RESERVED]: carStats[CarStatus.RESERVED] || 0,
-      [CarStatus.SOLD]: carStats[CarStatus.SOLD] || 0,
-    };
-  }, [cars]);
-
-
-  const NavButton: React.FC<{view: View, label: string, icon: React.ReactNode}> = ({ view, label, icon }) => (
-    <button
-      onClick={() => setActiveView(view)}
-      className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-        activeView === view
-          ? 'bg-sky-100 text-sky-700 dark:bg-sky-800/50 dark:text-sky-300'
-          : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-      }`}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
-  );
+  }, [cars, matches]);
 
   if (isAuthLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">Loading...</div>;
+     return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 dark:border-white"></div></div>;
   }
   
   if (!user) {
     return <LoginPage logo={logo} />;
   }
-
+  
   const renderContent = () => {
-    switch(activeView) {
+    if (isLoading) {
+       return <div className="text-center p-8">Loading data...</div>
+    }
+    if (error) {
+       return <div className="text-center p-8 text-red-500">Error loading data: {error}</div>
+    }
+    
+    switch (activeView) {
       case 'allocation':
       case 'stock':
-      case 'matching':
-      case 'sold':
+        const carsForView = activeView === 'allocation' ? filteredCars : stockCars;
         return (
-          <CarTable 
-            cars={processedCars}
+          <CarTable
+            cars={carsForView}
             matches={matches}
+            view={activeView}
+            userRole={user!.role}
             onEdit={handleOpenEditCarModal}
             onDelete={handleDeleteRequest}
-            onEditMatch={handleOpenEditMatchModal}
-            onDeleteMatch={handleDeleteMatchRequest}
             onDeleteStockRequest={handleDeleteStockRequest}
-            view={activeView}
-            userRole={user.role}
+            onDeleteMatch={handleDeleteMatchRequest}
+            onMatchCar={handleOpenAddMatchModalForCar}
           />
         );
+      case 'matching':
+        return <MatchingTable matches={matches.filter(m => matchingCars.some(c => c.id === m.carId))} cars={matchingCars} onEdit={handleOpenEditMatchModal} onDelete={handleDeleteMatchRequest} userRole={user.role}/>
+      case 'sold':
+        return <SoldCarTable soldData={soldCarData} onEditMatch={handleOpenEditMatchModal} userRole={user.role} />;
       case 'stats':
         return <StatisticsPage stats={stats} cars={cars} matches={matches} />;
-       case 'settings':
-        return <SettingsPage onNavigate={(view) => setActiveView(view)} />;
+      case 'settings':
+        return <SettingsPage onNavigate={setActiveView} />;
       case 'users':
-        if (user.role === 'executive') {
-          return <UserManagementPage token={token} currentUser={user} onBack={() => setActiveView('settings')} />;
-        }
-        return null;
+        return <UserManagementPage token={token} currentUser={{ id: user.id, role: user.role }} onBack={() => setActiveView('settings')} />;
       case 'salespersons':
-        if (user.role === 'executive') {
-          return <SalespersonManagementPage token={token} salespersons={allSalespersons} onDataChange={fetchData} onBack={() => setActiveView('settings')} />;
-        }
-        return null;
+        return <SalespersonManagementPage token={token} salespersons={allSalespersons} onDataChange={fetchData} onBack={() => setActiveView('settings')} />;
       case 'export':
-        if (user.role === 'executive') {
-          return <ExportPage cars={cars} matches={matches} onBack={() => setActiveView('settings')} />;
-        }
-        return null;
+        return <ExportPage cars={cars} matches={matches} onBack={() => setActiveView('settings')} />;
       default:
         return null;
     }
   };
-
-  const getPageTitle = () => {
-    switch(activeView) {
-      case 'allocation': return `Car Allocation (${processedCars.length})`;
-      case 'stock': return `Stock (${processedCars.length})`;
-      case 'matching': return `Matching (${processedCars.length})`;
-      case 'sold': return `Sold Cars (${processedCars.length})`;
-      case 'settings': return `Settings`;
-      case 'users': return `User Management`;
-      case 'salespersons': return `Salesperson Management`;
-      case 'export': return `Export Data`;
-      default: return '';
-    }
-  };
-
+  
+  const navigationItems = [
+    { view: 'allocation', label: 'Allocation', icon: CollectionIcon },
+    { view: 'stock', label: 'Stock', icon: ArchiveIcon },
+    { view: 'matching', label: 'Matching', icon: LinkIcon },
+    { view: 'sold', label: 'Sold', icon: ShoppingCartIcon },
+    { view: 'stats', label: 'Statistics', icon: ChartBarIcon },
+  ];
+  
+  if (user.role === 'executive') {
+    navigationItems.push({ view: 'settings', label: 'Settings', icon: CogIcon });
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
-        <div className="py-4 px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between">
-                <LogoUploader logo={logo} userRole={user.role} onLogoUpdate={fetchLogo} />
-                <div className="flex items-center space-x-2">
-                    {user.role !== 'user' && (
-                    <>
-                    <button
-                        onClick={() => setIsImportModalOpen(true)}
-                        className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-                    >
-                        <ClipboardPlusIcon /> <span className="ml-2 hidden sm:block">Import Excel</span>
-                    </button>
-                    <button
-                        onClick={handleOpenAddCarModal}
-                        className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-                    >
-                        <PlusIcon /> <span className="ml-2 hidden sm:block">Add New Car</span>
-                    </button>
-                    </>
-                    )}
-                    <button onClick={logout} className="text-sm font-medium text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white ml-2 sm:ml-4">Logout</button>
-                </div>
-            </div>
-        </div>
-         <nav className="px-4 sm:px-6 lg:px-8 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex space-x-2 py-2 overflow-x-auto">
-                <NavButton view="allocation" label={`Car allocation (${allocatedCars.length})`} icon={<CollectionIcon className="h-5 w-5"/>} />
-                <NavButton view="stock" label={`Stock (${stockCars.length})`} icon={<ArchiveIcon className="h-5 w-5"/>} />
-                <NavButton view="matching" label={`Matching (${matchingCarsData.length})`} icon={<LinkIcon />} />
-                <NavButton view="sold" label={`Sold Cars (${soldCarsData.length})`} icon={<ShoppingCartIcon />} />
-                <NavButton view="stats" label="Statistics" icon={<ChartBarIcon />} />
-                {user.role === 'executive' && (
-                    <NavButton view="settings" label="Settings" icon={<CogIcon />} />
-                )}
-            </div>
-        </nav>
-      </header>
-
-      <main className="py-6 px-4 sm:px-6 lg:px-8">
-            {isLoading ? <div className="text-center">Loading data...</div> : error ? <div className="text-center text-red-500">Error: {error}</div> : (
-              <>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {getPageTitle()}
-                  </h2>
-                  <div className="flex items-center gap-2">
-                      {activeView === 'stock' && user.role !== 'user' && (
-                        <button
-                            onClick={() => setIsAddFromAllocationModalOpen(true)}
-                            className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                        >
-                            <PlusIcon /> <span className="ml-2 hidden sm:block">เพิ่มรถเข้าสต็อก</span>
-                        </button>
-                      )}
-                      {activeView === 'matching' && user.role !== 'user' && (
-                        <button
-                            onClick={handleOpenAddMatchModal}
-                            className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-                        >
-                            <PlusIcon /> <span className="ml-2 hidden sm:block">เพิ่มรายการจับคู่</span>
-                        </button>
-                      )}
-                      {(['allocation', 'stock', 'matching', 'sold'].includes(activeView)) && (
-                        <button 
-                          onClick={() => setIsFilterVisible(!isFilterVisible)}
-                          className={`inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 ${
-                              isFilterVisible 
-                              ? 'bg-sky-100 dark:bg-sky-800/50 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-200' 
-                              : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          <FilterIcon/>
-                          <span className="ml-2">ตัวกรอง</span>
-                        </button>
-                      )}
-                  </div>
+      <nav className="bg-white dark:bg-gray-800 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                  <LogoUploader logo={logo} userRole={user.role} onLogoUpdate={fetchLogo} />
               </div>
+              <div className="hidden md:block">
+                <div className="ml-10 flex items-baseline space-x-4">
+                  {navigationItems.map(item => (
+                    <button
+                      key={item.view}
+                      onClick={() => setActiveView(item.view)}
+                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeView === item.view
+                          ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300'
+                          : 'text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <item.icon className="h-5 w-5 mr-2" />
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center">
+                <div className="text-sm">
+                    <div className="font-medium text-gray-800 dark:text-white">{user.username}</div>
+                    <div className="text-gray-500 dark:text-gray-400 capitalize">{user.role}</div>
+                </div>
+                <button onClick={logout} className="ml-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
-              {isFilterVisible && (['allocation', 'stock', 'matching', 'sold'].includes(activeView)) && (
-                  <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                          <div className="lg:col-span-2 xl:col-span-1">
-                              <label htmlFor="searchTerm" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
-                              <input type="text" name="searchTerm" id="searchTerm" placeholder="VIN, Dealer, Model..." value={stagedFilters.searchTerm} onChange={handleFilterChange}
-                                  className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                              />
-                          </div>
-                          <div className="relative">
-                              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {activeView === 'sold' ? 'วันที่ตัดขาย เริ่มต้น' : (activeView === 'stock' || activeView === 'matching') ? 'วันที่ Stock เริ่มต้น' : 'วันที่ Allocate เริ่มต้น'}
-                              </label>
-                              <input type="date" name="startDate" id="startDate" value={stagedFilters.startDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                          </div>
-                          <div className="relative">
-                              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                 {activeView === 'sold' ? 'วันที่ตัดขาย สิ้นสุด' : (activeView === 'stock' || activeView === 'matching') ? 'วันที่ Stock สิ้นสุด' : 'วันที่ Allocate สิ้นสุด'}
-                              </label>
-                              <input type="date" name="endDate" id="endDate" value={stagedFilters.endDate} onChange={handleFilterChange} className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
-                          </div>
-                          {/* UPDATE: Replaced all FilterDropdowns with MultiSelectFilter for enhanced functionality */}
-                          <MultiSelectFilter label="รหัส Dealer" options={filterOptions.dealerCodes} selectedOptions={stagedFilters.dealerCode} onChange={handleMultiSelectChange('dealerCode')} />
-                          <MultiSelectFilter label="รุ่นรถ" options={filterOptions.models} selectedOptions={stagedFilters.model} onChange={handleMultiSelectChange('model')} />
-                          <MultiSelectFilter label="สีรถ" options={filterOptions.colors} selectedOptions={stagedFilters.color} onChange={handleMultiSelectChange('color')} />
-                          <MultiSelectFilter label="Car Type" options={filterOptions.carTypes} selectedOptions={stagedFilters.carType} onChange={handleMultiSelectChange('carType')} />
-                          <MultiSelectFilter label="PO Type" options={filterOptions.poTypes} selectedOptions={stagedFilters.poType} onChange={handleMultiSelectChange('poType')} />
-                           {(activeView === 'allocation' || activeView === 'stock') && (
-                                <MultiSelectFilter 
-                                    label="สถานะ"
-                                    options={[...Object.values(CarStatus), ...Object.values(MatchStatus).filter(s => s !== MatchStatus.DELIVERED)]} 
-                                    selectedOptions={stagedFilters.carStatus}
-                                    onChange={handleMultiSelectChange('carStatus')}
-                                />
-                            )}
-                           {(activeView === 'stock' || activeView === 'matching' || activeView === 'sold') && (
-                              <MultiSelectFilter label="สาขาที่ Stock" options={filterOptions.stockLocations} selectedOptions={stagedFilters.stockLocation} onChange={handleMultiSelectChange('stockLocation')} />
-                          )}
-                           {activeView === 'matching' && (
-                                <MultiSelectFilter 
-                                    label="สถานะการจอง"
-                                    options={Object.values(MatchStatus)} 
-                                    selectedOptions={stagedFilters.matchStatus}
-                                    onChange={handleMultiSelectChange('matchStatus')}
-                                />
-                            )}
-                            {activeView === 'sold' && (
-                                <MultiSelectFilter 
-                                    label="เซลล์"
-                                    options={filterOptions.salespersons} 
-                                    selectedOptions={stagedFilters.salesperson}
-                                    onChange={handleMultiSelectChange('salesperson')}
-                                />
-                            )}
-                      </div>
-                      <div className="mt-4 flex justify-end space-x-2">
-                          <button onClick={handleApplyFilters} className="inline-flex items-center justify-center rounded-md border border-transparent bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                              <FilterIcon/> <span className="ml-2">Apply Filters</span>
-                          </button>
-                          <button onClick={handleClearFilters} className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                          Clear
-                          </button>
-                      </div>
-                  </div>
-              )}
-    
-              {renderContent()}
-
-            </>
+      <header className="bg-white dark:bg-gray-800 shadow-sm">
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center flex-wrap gap-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white capitalize">{activeView}</h1>
+          {['allocation', 'stock', 'matching', 'sold'].includes(activeView) && (
+             <div className="flex items-center space-x-2">
+                {user.role !== 'user' && (
+                    <>
+                    {activeView === 'allocation' && (
+                       <button onClick={handleOpenAddCarModal} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                          <PlusIcon/> <span className="ml-2 hidden sm:inline">เพิ่มรถใหม่</span>
+                       </button>
+                    )}
+                    {activeView === 'allocation' && (
+                       <button onClick={() => setIsImportModalOpen(true)} className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                           <ClipboardPlusIcon /> <span className="ml-2 hidden sm:inline">นำเข้าจาก Excel</span>
+                       </button>
+                    )}
+                     {activeView === 'stock' && (
+                         <button onClick={() => setIsAddFromAllocationModalOpen(true)} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                           <PlusIcon/> <span className="ml-2 hidden sm:inline">เพิ่มรถเข้าสต็อก</span>
+                       </button>
+                    )}
+                     {activeView === 'matching' && (
+                         <button onClick={handleOpenAddMatchModal} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                           <PlusIcon/> <span className="ml-2 hidden sm:inline">เพิ่มรายการจับคู่</span>
+                       </button>
+                    )}
+                    </>
+                )}
+                 <button onClick={() => setIsFilterVisible(!isFilterVisible)} className={`inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 ${isFilterVisible ? 'bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-700' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'}`}>
+                    <FilterIcon /> <span className="ml-2 hidden sm:inline">ตัวกรอง</span>
+                </button>
+            </div>
           )}
+        </div>
+      </header>
+      
+      {isFilterVisible && ['allocation', 'stock', 'matching', 'sold'].includes(activeView) && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                   <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      <div className="md:col-span-3 lg:col-span-4">
+                          <label htmlFor="searchTerm" className="block text-sm font-medium text-gray-700 dark:text-gray-300">ค้นหาทั่วไป</label>
+                          <input type="text" id="searchTerm" value={stagedFilters.searchTerm} onChange={e => handleFilterChange('searchTerm', e.target.value)}
+                                 className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                 placeholder="VIN, Model, Color, Customer name..."
+                          />
+                      </div>
+                       <MultiSelectFilter label="Dealer Code" options={filterOptions.dealerCode} selectedOptions={stagedFilters.dealerCode} onChange={(val) => handleFilterChange('dealerCode', val)} />
+                       <MultiSelectFilter label="Model" options={filterOptions.model} selectedOptions={stagedFilters.model} onChange={(val) => handleFilterChange('model', val)} />
+                       <MultiSelectFilter label="Color" options={filterOptions.color} selectedOptions={stagedFilters.color} onChange={(val) => handleFilterChange('color', val)} />
+                       <MultiSelectFilter label="Car Status" options={filterOptions.carStatus} selectedOptions={stagedFilters.carStatus} onChange={(val) => handleFilterChange('carStatus', val)} />
+                       <MultiSelectFilter label="Match Status" options={filterOptions.matchStatus} selectedOptions={stagedFilters.matchStatus} onChange={(val) => handleFilterChange('matchStatus', val)} />
+                       <MultiSelectFilter label="Salesperson" options={filterOptions.salesperson} selectedOptions={stagedFilters.salesperson} onChange={(val) => handleFilterChange('salesperson', val)} />
+                       <MultiSelectFilter label="Stock Location" options={filterOptions.stockLocation} selectedOptions={stagedFilters.stockLocation} onChange={(val) => handleFilterChange('stockLocation', val)} />
+                   </div>
+                   <div className="mt-4 flex justify-end space-x-2">
+                       <button onClick={clearFilters} className="px-4 py-2 border border-gray-300 dark:border-gray-500 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">Clear</button>
+                       <button onClick={applyFilters} className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-sky-600 hover:bg-sky-700">Apply Filters</button>
+                   </div>
+              </div>
+          </div>
+      )}
+
+      <main>
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            {renderContent()}
+        </div>
       </main>
 
+      {/* --- Modals --- */}
       <CarFormModal 
         isOpen={isFormModalOpen} 
         onClose={handleCloseModals} 
-        onSave={handleSaveCar} 
-        carToEdit={editingCar} 
-        matchToEdit={matchForEditingCar}
+        onSave={handleSaveCar}
+        carToEdit={editingCar}
+        matchToEdit={editingCar ? matches.find(m => m.carId === editingCar.id) : null}
         salespersons={salespersons}
-        userRole={user.role} 
+        userRole={user!.role}
       />
-      <ImportModal isOpen={isImportModalOpen} onClose={handleCloseModals} onImport={handleImportCars} />
+      <ImportModal isOpen={isImportModalOpen} onClose={handleCloseModals} onImport={handleBatchImport} />
       <AddFromAllocationModal 
         isOpen={isAddFromAllocationModalOpen} 
-        onClose={handleCloseModals} 
-        onSave={handleAddFromAllocation}
-        allocatedCars={carsNotInStock}
-      />
-      <MatchingFormModal
-        isOpen={isMatchFormModalOpen}
         onClose={handleCloseModals}
-        onSave={handleSaveMatch}
-        matchToEdit={editingMatch}
-        cars={cars}
-        availableCars={carsInStockForMatching}
-        userRole={user.role}
-        salespersons={salespersons}
-      />
-      <ConfirmDeleteModal
-        isOpen={!!carToDelete}
-        onClose={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
-        car={carToDelete}
-        viewContext={deleteRequestContext}
-      />
-      <ConfirmMatchDeleteModal
-        isOpen={!!matchToDelete}
-        onClose={handleCancelDeleteMatch}
-        onConfirm={handleConfirmDeleteMatch}
-        match={matchToDelete}
-        car={matchToDelete ? cars.find(c => c.id === matchToDelete.carId) || null : null}
-      />
-      <ConfirmStockDeleteModal
-        isOpen={!!carToUnstock}
-        onClose={handleCancelDeleteStock}
-        onConfirm={handleConfirmDeleteStock}
-        car={carToUnstock}
-      />
+        onSave={handleBatchAddToStock}
+        allocatedCars={allocatedCars}
+       />
+       <MatchingFormModal
+            isOpen={isMatchFormModalOpen}
+            onClose={handleCloseModals}
+            onSave={handleSaveMatch}
+            matchToEdit={editingMatch}
+            carToMatch={carToMatch}
+            cars={cars}
+            availableCars={availableForMatching}
+            userRole={user!.role}
+            salespersons={salespersons}
+        />
+       <ConfirmDeleteModal 
+            isOpen={!!carToDelete}
+            onClose={handleCancelDelete}
+            onConfirm={handleConfirmDelete}
+            car={carToDelete}
+            viewContext={deleteRequestContext}
+        />
+        <ConfirmMatchDeleteModal
+            isOpen={!!matchToDelete}
+            onClose={handleCancelDeleteMatch}
+            onConfirm={handleConfirmDeleteMatch}
+            match={matchToDelete}
+            car={matchToDelete ? cars.find(c => c.id === matchToDelete.carId) || null : null}
+        />
+        <ConfirmStockDeleteModal
+            isOpen={!!carToUnstock}
+            onClose={handleCancelDeleteStock}
+            onConfirm={handleConfirmDeleteStock}
+            car={carToUnstock}
+        />
+
     </div>
   );
 };
