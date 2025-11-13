@@ -164,6 +164,16 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                                     S/N: {car.stockNo}
                                 </div>
                             )}
+                            {match?.licensePlate && (
+                                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
+                                    ทะเบียนรถ: {match.licensePlate}
+                                </div>
+                            )}
+                            {match?.notes && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400 px-1 whitespace-pre-wrap">
+                                    หมายเหตุ: {match.notes}
+                                </div>
+                            )}
                           </div>
                       </div>
                   </div>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Car, Match, CarStatus } from '../types';
 import { ArrowLeftIcon } from '../components/icons';
 import { exportToXLSX } from '../lib/export';
@@ -26,34 +26,59 @@ const ExportPage: React.FC<ExportPageProps> = ({ cars, matches, onBack }) => {
     setDates(prev => ({ ...prev, [name]: value }));
   };
   
-  const headers = ["Dealer Code", "Dealer Name", "Model", "VIN", "Front Motor No", "Rear Motor No", "Battery No", "Engine No", "Color", "Car Type", "Allocation Date", "PO Type", "Price"];
+  const headers = [
+      "Dealer Code", "Dealer Name", "Model", "VIN", "Front Motor No", "Rear Motor No", 
+      "Battery No", "Engine No", "Color", "Car Type", "Allocation Date", "PO Type", "Price",
+      "วันที่นำเข้าสต็อก", "สต็อกสาขา", "เลขสต็อก", "วันที่ตัดรถ", "Aging (Days)", "ชื่อลูกค้า",
+      "เซลล์", "สถานะการขาย", "ทะเบียนรถ", "หมายเหตุ"
+  ];
 
-  const formatDataForExport = (data: Car[]): any[][] => {
-    return data.map(car => [
-      car.dealerCode,
-      car.dealerName,
-      car.model,
-      car.vin,
-      car.frontMotorNo,
-      car.rearMotorNo,
-      car.batteryNo,
-      car.engineNo,
-      car.color,
-      car.carType,
-      car.allocationDate ? new Date(car.allocationDate).toLocaleDateString('en-CA') : '', // YYYY-MM-DD
-      car.poType,
-      car.price
-    ]);
+  const formatDataForExport = (data: Car[], matchesByCarId: Map<string, Match>): any[][] => {
+    const today = new Date();
+    return data.map(car => {
+      const match = matchesByCarId.get(car.id!);
+      
+      const allocationDate = car.allocationDate ? new Date(car.allocationDate) : null;
+      const aging = allocationDate 
+        ? Math.floor((today.getTime() - allocationDate.getTime()) / (1000 * 60 * 60 * 24))
+        : '';
+
+      return [
+        car.dealerCode,
+        car.dealerName,
+        car.model,
+        car.vin,
+        car.frontMotorNo,
+        car.rearMotorNo,
+        car.batteryNo,
+        car.engineNo,
+        car.color,
+        car.carType,
+        car.allocationDate ? new Date(car.allocationDate).toLocaleDateString('en-CA') : '', // YYYY-MM-DD
+        car.poType,
+        car.price,
+        // New columns
+        car.stockInDate ? new Date(car.stockInDate).toLocaleDateString('en-CA') : '',
+        car.stockLocation || '',
+        car.stockNo || '',
+        match?.saleDate ? new Date(match.saleDate).toLocaleDateString('en-CA') : '',
+        aging,
+        match?.customerName || '',
+        match?.salesperson || '',
+        match?.status || '',
+        match?.licensePlate || '',
+        match?.notes || ''
+      ];
+    });
   };
   
   const handleExport = (type: 'allocated' | 'stock' | 'matching' | 'sold') => {
     let filteredCars: Car[] = [];
     let fileName = 'export';
-    let dateField: keyof Car = 'allocationDate';
+    let dateField: keyof Car | undefined;
     let startDate: string = '';
     let endDate: string = '';
 
-    // FIX: Explicitly type the Map to resolve a TypeScript type inference issue.
     const matchesByCarId = new Map<string, Match>(matches.map(m => [m.carId, m]));
 
     switch (type) {
@@ -80,9 +105,9 @@ const ExportPage: React.FC<ExportPageProps> = ({ cars, matches, onBack }) => {
             break;
         case 'sold':
             const soldCars = cars.filter(c => c.status === CarStatus.SOLD);
-            const start = startDate ? new Date(dates.soldStart) : null;
+            const start = dates.soldStart ? new Date(dates.soldStart) : null;
             if(start) start.setHours(0,0,0,0);
-            const end = endDate ? new Date(dates.soldEnd) : null;
+            const end = dates.soldEnd ? new Date(dates.soldEnd) : null;
             if(end) end.setHours(23,59,59,999);
 
             filteredCars = soldCars.filter(car => {
@@ -97,9 +122,9 @@ const ExportPage: React.FC<ExportPageProps> = ({ cars, matches, onBack }) => {
             break;
     }
 
-    if (type !== 'sold') {
+    if (dateField) { // Only apply date filtering for non-sold types here
         filteredCars = filteredCars.filter(car => {
-            const dateValue = car[dateField];
+            const dateValue = car[dateField as keyof Car];
             if (!dateValue || typeof dateValue !== 'string') return false;
             if (!startDate && !endDate) return true;
             const carDate = new Date(dateValue);
@@ -111,12 +136,13 @@ const ExportPage: React.FC<ExportPageProps> = ({ cars, matches, onBack }) => {
         });
     }
 
+
     if (filteredCars.length === 0) {
         alert('ไม่พบข้อมูลตามเงื่อนไขที่เลือก');
         return;
     }
 
-    const dataToExport = [headers, ...formatDataForExport(filteredCars)];
+    const dataToExport = [headers, ...formatDataForExport(filteredCars, matchesByCarId)];
     const finalFileName = `${fileName}_${new Date().toISOString().split('T')[0]}`;
     exportToXLSX(dataToExport, finalFileName);
   };
