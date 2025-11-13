@@ -2,8 +2,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Car, CarStatus, Match, MatchStatus, Salesperson, AppUser, CarFormData } from './types';
 import CarTable from './components/CarTable';
-import MatchingTable from './components/MatchingTable';
-import SoldCarTable from './components/SoldCarTable';
 import CarFormModal from './components/CarFormModal';
 import MatchingFormModal from './components/MatchingFormModal';
 import ImportModal from './components/ImportModal';
@@ -559,17 +557,25 @@ const App: React.FC = () => {
       return 0;
     });
   }, [cars, sortConfig]);
+  
+  const matchesByCarId = useMemo(() => new Map(matches.map(match => [match.carId, match])), [matches]);
 
   const filteredCars = useMemo(() => {
     const { searchTerm, startDate, endDate, ...selectFilters } = activeFilters;
     const lowercasedTerm = searchTerm.toLowerCase();
     
     return sortedCars.filter(car => {
-      // Search term filter
+      // Search term filter: Search both car and its associated match data
+      const match = matchesByCarId.get(car.id!);
+      const searchableValues = [
+          ...Object.values(car),
+          ...(match ? Object.values(match) : [])
+      ];
       const matchesSearch = searchTerm === '' ||
-        Object.values(car).some(val =>
-          String(val).toLowerCase().includes(lowercasedTerm)
+        searchableValues.some(val => 
+          val !== null && val !== undefined && String(val).toLowerCase().includes(lowercasedTerm)
         );
+      
       if (!matchesSearch) return false;
 
       // Date range filter (on allocationDate)
@@ -583,7 +589,6 @@ const App: React.FC = () => {
           const filterValues = selectFilters[key];
           if (filterValues.length > 0) {
               if (key === 'matchStatus' || key === 'salesperson') {
-                  const match = matches.find(m => m.carId === car.id);
                   if (!match) return false; // If filtering by match status/salesperson, car must have a match
                   if (key === 'matchStatus' && !filterValues.includes(match.status)) return false;
                   if (key === 'salesperson' && !filterValues.includes(match.salesperson)) return false;
@@ -597,23 +602,13 @@ const App: React.FC = () => {
 
       return true;
     });
-  }, [sortedCars, activeFilters, matches]);
-
-  const matchesByCarId = useMemo(() => new Map(matches.map(match => [match.carId, match])), [matches]);
+  }, [sortedCars, activeFilters, matchesByCarId]);
 
   const availableForMatching = cars.filter(c => c.status === CarStatus.IN_STOCK);
   const allocatedCars = cars.filter(c => !c.stockInDate && c.status !== CarStatus.RESERVED && c.status !== CarStatus.SOLD);
   const stockCars = filteredCars.filter(c => c.stockInDate && c.status !== CarStatus.RESERVED && c.status !== CarStatus.SOLD);
   const matchingCars = filteredCars.filter(c => c.status === CarStatus.RESERVED);
   const soldCars = filteredCars.filter(c => c.status === CarStatus.SOLD);
-  
-  const soldCarData = useMemo(() => {
-    return soldCars.map(car => ({
-      car,
-      match: matchesByCarId.get(car.id!),
-    })).filter(item => item.match);
-  }, [soldCars, matchesByCarId]);
-
 
   // Stats calculation
   const stats = useMemo(() => {
@@ -672,11 +667,9 @@ const App: React.FC = () => {
     
     switch (activeView) {
       case 'allocation':
-      case 'stock':
-        const carsForView = activeView === 'allocation' ? filteredCars : stockCars;
         return (
           <CarTable
-            cars={carsForView}
+            cars={filteredCars}
             matches={matches}
             view={activeView}
             userRole={user!.role}
@@ -688,10 +681,36 @@ const App: React.FC = () => {
             onMatchCar={handleOpenAddMatchModalForCar}
           />
         );
+      case 'stock':
+        return (
+          <CarTable
+            cars={stockCars}
+            matches={matches}
+            view={activeView}
+            userRole={user!.role}
+            onEdit={handleOpenEditCarModal}
+            onDelete={handleDeleteRequest}
+            onMatchCar={handleOpenAddMatchModalForCar}
+            onDeleteMatch={handleDeleteMatchRequest}
+          />
+        );
       case 'matching':
-        return <MatchingTable matches={matches.filter(m => matchingCars.some(c => c.id === m.carId))} cars={matchingCars} onEdit={handleOpenEditMatchModal} onDelete={handleDeleteMatchRequest} userRole={user.role}/>
+        return <CarTable
+            cars={matchingCars}
+            matches={matches}
+            view="matching"
+            userRole={user!.role}
+            onEditMatch={handleOpenEditMatchModal}
+            onDeleteMatch={handleDeleteMatchRequest}
+          />
       case 'sold':
-        return <SoldCarTable soldData={soldCarData} onEditMatch={handleOpenEditMatchModal} userRole={user.role} />;
+        return <CarTable
+            cars={soldCars}
+            matches={matches}
+            view="sold"
+            userRole={user!.role}
+            onEditMatch={handleOpenEditMatchModal}
+          />;
       case 'stats':
         return <StatisticsPage stats={stats} cars={cars} matches={matches} />;
       case 'settings':

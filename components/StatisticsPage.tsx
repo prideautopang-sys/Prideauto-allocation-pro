@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Car, Match, CarStatus, MatchStatus } from '../types';
 import { ArchiveIcon, BookmarkIcon, CheckCircleIcon, ClockIcon, CollectionIcon, DownloadIcon, TruckIcon } from './icons';
@@ -180,12 +181,12 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
 
 
   const statCardsData = [
-    { title: CarStatus.WAITING_FOR_TRAILER, value: stats[CarStatus.WAITING_FOR_TRAILER], icon: <ClockIcon />, colorClass: "border-l-4 border-yellow-500" },
-    { title: CarStatus.ON_TRAILER, value: stats[CarStatus.ON_TRAILER], icon: <TruckIcon />, colorClass: "border-l-4 border-orange-500" },
-    { title: CarStatus.UNLOADED, value: stats[CarStatus.UNLOADED], icon: <DownloadIcon />, colorClass: "border-l-4 border-cyan-500" },
-    { title: CarStatus.IN_STOCK, value: stats[CarStatus.IN_STOCK], icon: <ArchiveIcon />, colorClass: "border-l-4 border-blue-500" },
-    { title: CarStatus.RESERVED, value: stats[CarStatus.RESERVED], icon: <BookmarkIcon />, colorClass: "border-l-4 border-purple-500" },
-    { title: CarStatus.SOLD, value: stats[CarStatus.SOLD], icon: <CheckCircleIcon />, colorClass: "border-l-4 border-green-500" },
+    { title: CarStatus.WAITING_FOR_TRAILER, value: stats[CarStatus.WAITING_FOR_TRAILER] || 0, icon: <ClockIcon />, colorClass: "border-l-4 border-yellow-500" },
+    { title: CarStatus.ON_TRAILER, value: stats[CarStatus.ON_TRAILER] || 0, icon: <TruckIcon />, colorClass: "border-l-4 border-orange-500" },
+    { title: CarStatus.UNLOADED, value: stats[CarStatus.UNLOADED] || 0, icon: <DownloadIcon />, colorClass: "border-l-4 border-cyan-500" },
+    { title: CarStatus.IN_STOCK, value: stats[CarStatus.IN_STOCK] || 0, icon: <ArchiveIcon />, colorClass: "border-l-4 border-blue-500" },
+    { title: CarStatus.RESERVED, value: stats[CarStatus.RESERVED] || 0, icon: <BookmarkIcon />, colorClass: "border-l-4 border-purple-500" },
+    { title: CarStatus.SOLD, value: stats[CarStatus.SOLD] || 0, icon: <CheckCircleIcon />, colorClass: "border-l-4 border-green-500" },
   ];
 
   return (
