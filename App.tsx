@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Car, CarStatus, Match, MatchStatus, Salesperson, AppUser, CarFormData } from './types';
 import CarTable from './components/CarTable';
@@ -563,6 +564,12 @@ const App: React.FC = () => {
   const filteredCars = useMemo(() => {
     const { searchTerm, startDate, endDate, ...selectFilters } = activeFilters;
     const lowercasedTerm = searchTerm.toLowerCase();
+
+    // Prepare date range boundaries once
+    const start = startDate ? new Date(startDate) : null;
+    if(start) start.setHours(0,0,0,0);
+    const end = endDate ? new Date(endDate) : null;
+    if(end) end.setHours(23,59,59,999);
     
     return sortedCars.filter(car => {
       // Search term filter: Search both car and its associated match data
@@ -578,11 +585,25 @@ const App: React.FC = () => {
       
       if (!matchesSearch) return false;
 
-      // Date range filter (on allocationDate)
-      const allocationDate = new Date(car.allocationDate);
-      const matchesStartDate = !startDate || allocationDate >= new Date(startDate);
-      const matchesEndDate = !endDate || allocationDate <= new Date(endDate);
-      if (!matchesStartDate || !matchesEndDate) return false;
+      // Contextual date range filter
+      if (start || end) {
+          let dateToCompare: Date | null = null;
+
+          if (activeView === 'allocation') {
+              dateToCompare = car.allocationDate ? new Date(car.allocationDate) : null;
+          } else if (activeView === 'stock' || activeView === 'matching') {
+              dateToCompare = car.stockInDate ? new Date(car.stockInDate) : null;
+          } else if (activeView === 'sold') {
+              dateToCompare = match?.saleDate ? new Date(match.saleDate) : null;
+          }
+
+          if (!dateToCompare) return false;
+
+          const matchesStartDate = !start || dateToCompare >= start;
+          const matchesEndDate = !end || dateToCompare <= end;
+          
+          if (!matchesStartDate || !matchesEndDate) return false;
+      }
       
       // Multi-select filters
       for (const key of Object.keys(selectFilters) as Array<keyof typeof selectFilters>) {
@@ -602,11 +623,13 @@ const App: React.FC = () => {
 
       return true;
     });
-  }, [sortedCars, activeFilters, matchesByCarId]);
+  }, [sortedCars, activeFilters, matchesByCarId, activeView]);
 
   const availableForMatching = cars.filter(c => c.status === CarStatus.IN_STOCK);
   const allocatedCars = cars.filter(c => !c.stockInDate && c.status !== CarStatus.RESERVED && c.status !== CarStatus.SOLD);
-  const stockCars = filteredCars.filter(c => c.stockInDate && c.status !== CarStatus.RESERVED && c.status !== CarStatus.SOLD);
+  
+  // UPDATE: Correctly filter cars for the 'Stock' view by their status.
+  const stockCars = filteredCars.filter(c => c.status === CarStatus.IN_STOCK);
   const matchingCars = filteredCars.filter(c => c.status === CarStatus.RESERVED);
   const soldCars = filteredCars.filter(c => c.status === CarStatus.SOLD);
 
@@ -727,16 +750,22 @@ const App: React.FC = () => {
   };
   
   const navigationItems = [
-    { view: 'allocation', label: 'Allocation', icon: CollectionIcon },
-    { view: 'stock', label: 'Stock', icon: ArchiveIcon },
-    { view: 'matching', label: 'Matching', icon: LinkIcon },
-    { view: 'sold', label: 'Sold', icon: ShoppingCartIcon },
+    { view: 'allocation', label: 'Allocation', icon: CollectionIcon, count: filteredCars.length },
+    { view: 'stock', label: 'Stock', icon: ArchiveIcon, count: stockCars.length },
+    { view: 'matching', label: 'Matching', icon: LinkIcon, count: matchingCars.length },
+    { view: 'sold', label: 'Sold', icon: ShoppingCartIcon, count: soldCars.length },
     { view: 'stats', label: 'Statistics', icon: ChartBarIcon },
   ];
   
   if (user.role === 'executive') {
     navigationItems.push({ view: 'settings', label: 'Settings', icon: CogIcon });
   }
+  
+  let dateFilterLabel = 'Date';
+  if (activeView === 'allocation') dateFilterLabel = 'Allocation Date';
+  else if (activeView === 'stock') dateFilterLabel = 'In Stock Date';
+  else if (activeView === 'matching') dateFilterLabel = 'In Stock Date';
+  else if (activeView === 'sold') dateFilterLabel = 'Sold Date';
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
@@ -752,7 +781,7 @@ const App: React.FC = () => {
                   {navigationItems.map(item => (
                     <button
                       key={item.view}
-                      onClick={() => setActiveView(item.view)}
+                      onClick={() => setActiveView(item.view as View)}
                       className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeView === item.view
                           ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300'
@@ -761,6 +790,15 @@ const App: React.FC = () => {
                     >
                       <item.icon className="h-5 w-5 mr-2" />
                       {item.label}
+                      {item.count !== undefined && (
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${
+                          activeView === item.view
+                            ? 'bg-sky-500 text-white'
+                            : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                        }`}>
+                          {item.count}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -828,6 +866,20 @@ const App: React.FC = () => {
                                  className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                  placeholder="VIN, Model, Color, Customer name..."
                           />
+                      </div>
+                      <div className="md:col-span-3 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-t dark:border-gray-700 pt-4 mt-4">
+                          <div>
+                              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{dateFilterLabel} (From)</label>
+                              <input type="date" id="startDate" name="startDate" value={stagedFilters.startDate} onChange={e => handleFilterChange('startDate', e.target.value)}
+                                      className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              />
+                          </div>
+                          <div>
+                              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{dateFilterLabel} (To)</label>
+                              <input type="date" id="endDate" name="endDate" value={stagedFilters.endDate} onChange={e => handleFilterChange('endDate', e.target.value)}
+                                      className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              />
+                          </div>
                       </div>
                        <MultiSelectFilter label="Dealer Code" options={filterOptions.dealerCode} selectedOptions={stagedFilters.dealerCode} onChange={(val) => handleFilterChange('dealerCode', val)} />
                        <MultiSelectFilter label="Model" options={filterOptions.model} selectedOptions={stagedFilters.model} onChange={(val) => handleFilterChange('model', val)} />
