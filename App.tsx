@@ -1,6 +1,7 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Car, CarStatus, Match, MatchStatus, Salesperson, AppUser } from './types';
+import { Car, CarStatus, Match, MatchStatus, Salesperson, AppUser, CarFormData } from './types';
 import CarTable from './components/CarTable';
 import MatchingTable from './components/MatchingTable';
 import SoldCarTable from './components/SoldCarTable';
@@ -169,27 +170,95 @@ const App: React.FC = () => {
     setIsFormModalOpen(true);
   };
 
-  const handleSaveCar = async (car: Car) => {
-    const isEditing = !!editingCar;
-    const url = isEditing ? `/api/cars/${car.id}` : '/api/cars';
-    const method = isEditing ? 'PUT' : 'POST';
+  const handleSaveCar = async (formData: CarFormData) => {
+    const isEditing = !!formData.id;
 
-    try {
-        const response = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(car)
-        });
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.message || 'Failed to save car');
+    // --- Split formData into car and match objects ---
+    const {
+        matchId, matchCustomerName, matchSalesperson, matchSaleDate,
+        matchStatus, matchLicensePlate, matchNotes,
+        ...carData
+    } = formData;
+
+    const carToSave: Car = { ...carData };
+
+    const matchDataToSave = {
+        id: matchId,
+        customerName: matchCustomerName,
+        salesperson: matchSalesperson,
+        saleDate: matchSaleDate,
+        status: matchStatus,
+        licensePlate: matchLicensePlate,
+        notes: matchNotes,
+    };
+    
+    // Check if there is any actual data for a match record.
+    const isMatchDataPresent = matchDataToSave.customerName || matchDataToSave.salesperson || matchDataToSave.status;
+
+    // --- Handle Car Status Logic ---
+    if (isMatchDataPresent) {
+        if (matchDataToSave.status === MatchStatus.DELIVERED && matchDataToSave.saleDate) {
+            carToSave.status = CarStatus.SOLD;
+        } else {
+            carToSave.status = CarStatus.RESERVED;
         }
-        await fetchData(); // Refetch all data
-        setIsFormModalOpen(false);
-    } catch (error: any) {
-        alert(`Error: ${error.message}`);
+    } else if (carToSave.stockInDate && carToSave.status !== CarStatus.IN_STOCK && carToSave.status !== CarStatus.RESERVED && carToSave.status !== CarStatus.SOLD) {
+        // If stock date is added but no match data, set to In Stock
+        carToSave.status = CarStatus.IN_STOCK;
     }
-  };
+
+    if (isEditing) {
+        try {
+            // 1. Save Car
+            const carResponse = await fetch(`/api/cars/${carToSave.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(carToSave)
+            });
+            if (!carResponse.ok) throw new Error('Failed to save car');
+
+            // 2. Save Match (if data is present)
+            if (isMatchDataPresent) {
+                const isEditingMatch = !!matchDataToSave.id;
+                const url = isEditingMatch ? `/api/matches/${matchDataToSave.id}` : '/api/matches';
+                const method = isEditingMatch ? 'PUT' : 'POST';
+
+                const matchPayload = { ...matchDataToSave, carId: carToSave.id! };
+                // Ensure status is set if customer exists
+                if (!matchPayload.status) matchPayload.status = MatchStatus.WAITING_FOR_CONTRACT;
+
+                const matchResponse = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(matchPayload)
+                });
+                if (!matchResponse.ok) throw new Error('Failed to save match data');
+            }
+            
+            await fetchData();
+            handleCloseModals();
+        } catch (error: any) {
+            alert(`Error: ${error.message}`);
+        }
+    } else { // Logic for CREATING a new car
+        try {
+            const response = await fetch('/api/cars', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(carToSave)
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || 'Failed to save car');
+            }
+            await fetchData();
+            handleCloseModals();
+        } catch (error: any) {
+            alert(`Error: ${error.message}`);
+        }
+    }
+};
+
   
   const handleDeleteRequest = (car: Car) => {
     if (activeView === 'allocation' || activeView === 'stock') {
@@ -432,6 +501,12 @@ const App: React.FC = () => {
 
   const carsNotInStock = useMemo(() => cars.filter(car => !car.stockInDate), [cars]);
   const carsInStockForMatching = useMemo(() => cars.filter(c => c.status === CarStatus.IN_STOCK), [cars]);
+  
+  const matchForEditingCar = useMemo(() => {
+    if (!editingCar) return null;
+    return matches.find(m => m.carId === editingCar.id) || null;
+  }, [editingCar, matches]);
+
 
   const processedCars = useMemo(() => {
     let sourceCars: Car[] = [];
@@ -771,7 +846,15 @@ const App: React.FC = () => {
           )}
       </main>
 
-      <CarFormModal isOpen={isFormModalOpen} onClose={handleCloseModals} onSave={handleSaveCar} carToEdit={editingCar} userRole={user.role} />
+      <CarFormModal 
+        isOpen={isFormModalOpen} 
+        onClose={handleCloseModals} 
+        onSave={handleSaveCar} 
+        carToEdit={editingCar} 
+        matchToEdit={matchForEditingCar}
+        salespersons={salespersons}
+        userRole={user.role} 
+      />
       <ImportModal isOpen={isImportModalOpen} onClose={handleCloseModals} onImport={handleImportCars} />
       <AddFromAllocationModal 
         isOpen={isAddFromAllocationModalOpen} 

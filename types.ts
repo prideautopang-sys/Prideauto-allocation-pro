@@ -1,4 +1,5 @@
 
+
 export interface Car {
   id?: string;
   dealerCode: string;
@@ -65,3 +66,14 @@ export interface Salesperson {
   name: string;
   status: SalespersonStatus;
 }
+
+// Represents the combined data from the unified CarFormModal
+export type CarFormData = Car & {
+  matchId?: string;
+  matchCustomerName?: string;
+  matchSalesperson?: string;
+  matchSaleDate?: string;
+  matchStatus?: MatchStatus;
+  matchLicensePlate?: string;
+  matchNotes?: string;
+};
