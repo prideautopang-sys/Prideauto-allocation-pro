@@ -101,6 +101,12 @@ const App: React.FC = () => {
     key: 'allocationDate', direction: 'descending',
   });
     
+  // FIX: Reset filters when changing views to prevent filter state from leaking between views.
+  useEffect(() => {
+    setStagedFilters(initialFilters);
+    setActiveFilters(initialFilters);
+  }, [activeView]);
+
   const fetchLogo = useCallback(async () => {
     try {
         const res = await fetch('/api/assets/logo');
@@ -613,6 +619,9 @@ const App: React.FC = () => {
                   if (!match) return false; // If filtering by match status/salesperson, car must have a match
                   if (key === 'matchStatus' && !filterValues.includes(match.status)) return false;
                   if (key === 'salesperson' && !filterValues.includes(match.salesperson)) return false;
+              } else if (key === 'carStatus') {
+                  // FIX: Correctly check against the 'status' property of the car object.
+                  if (!filterValues.includes(car.status)) return false;
               } else {
                   const carValue = car[key as keyof Car];
                   if (carValue === null || carValue === undefined) return false;
