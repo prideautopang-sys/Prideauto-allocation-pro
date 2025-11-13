@@ -108,7 +108,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                 } else if (view === 'stock') {
                     MainActionIcon = ArchiveOutIcon;
                     mainActionTitle = 'Remove from Stock';
-                    mainActionClassName = 'text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-800/50';
+                    mainActionClassName = 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50';
                 }
 
                 return (
