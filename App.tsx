@@ -8,6 +8,7 @@ import CarFormModal from './components/CarFormModal';
 import MatchingFormModal from './components/MatchingFormModal';
 import ImportModal from './components/ImportModal';
 import AddFromAllocationModal from './components/AddFromAllocationModal';
+import AddToStockModal from './components/AddToStockModal';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ConfirmMatchDeleteModal from './components/ConfirmMatchDeleteModal';
 import ConfirmStockDeleteModal from './components/ConfirmStockDeleteModal';
@@ -77,10 +78,12 @@ const App: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddFromAllocationModalOpen, setIsAddFromAllocationModalOpen] = useState(false);
   const [isMatchFormModalOpen, setIsMatchFormModalOpen] = useState(false);
+  const [isAddToStockModalOpen, setIsAddToStockModalOpen] = useState(false);
   
   // Editing/Deleting State
   const [editingCar, setEditingCar] = useState<Car | null>(null);
   const [carToMatch, setCarToMatch] = useState<Car | null>(null);
+  const [carToAddToStock, setCarToAddToStock] = useState<Car | null>(null);
   const [carToDelete, setCarToDelete] = useState<Car | null>(null);
   const [deleteRequestContext, setDeleteRequestContext] = useState<'allocation' | 'stock' | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
@@ -492,15 +495,50 @@ const App: React.FC = () => {
           alert(`Error: ${error.message}`);
       }
   };
+  
+  const handleOpenAddToStockModal = (car: Car) => {
+    setCarToAddToStock(car);
+    setIsAddToStockModalOpen(true);
+  };
+
+  const handleAddToStock = async (carId: string, stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => {
+      const carToUpdate = cars.find(c => c.id === carId);
+      if (!carToUpdate) {
+          alert("Car not found!");
+          return;
+      }
+
+      try {
+          const updatedCar = { 
+              ...carToUpdate, 
+              status: CarStatus.IN_STOCK, 
+              stockInDate,
+              stockLocation,
+              stockNo
+          };
+          const response = await fetch(`/api/cars/${carId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify(updatedCar)
+          });
+          if (!response.ok) throw new Error('Failed to add car to stock');
+          await fetchData();
+          handleCloseModals();
+      } catch (error: any) {
+          alert(`Error: ${error.message}`);
+      }
+  };
 
   const handleCloseModals = () => {
     setIsFormModalOpen(false);
     setIsImportModalOpen(false);
     setIsAddFromAllocationModalOpen(false);
     setIsMatchFormModalOpen(false);
+    setIsAddToStockModalOpen(false);
     setEditingCar(null);
     setEditingMatch(null);
     setCarToMatch(null);
+    setCarToAddToStock(null);
   };
 
   // --- Filtering & Sorting Logic ---
@@ -643,6 +681,7 @@ const App: React.FC = () => {
             view={activeView}
             userRole={user!.role}
             onEdit={handleOpenEditCarModal}
+            onAddToStock={handleOpenAddToStockModal}
             onDelete={handleDeleteRequest}
             onDeleteStockRequest={handleDeleteStockRequest}
             onDeleteMatch={handleDeleteMatchRequest}
@@ -820,6 +859,12 @@ const App: React.FC = () => {
             availableCars={availableForMatching}
             userRole={user!.role}
             salespersons={salespersons}
+        />
+        <AddToStockModal
+            isOpen={isAddToStockModalOpen}
+            onClose={handleCloseModals}
+            onSave={handleAddToStock}
+            car={carToAddToStock}
         />
        <ConfirmDeleteModal 
             isOpen={!!carToDelete}

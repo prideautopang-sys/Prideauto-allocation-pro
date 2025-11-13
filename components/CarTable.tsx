@@ -12,6 +12,7 @@ interface CarTableProps {
   view: 'allocation' | 'stock' | 'matching' | 'sold';
   userRole: UserRole;
   onEdit?: (car: Car) => void;
+  onAddToStock?: (car: Car) => void;
   onDelete?: (car: Car) => void;
   onEditMatch?: (match: Match) => void;
   onDeleteMatch?: (match: Match) => void;
@@ -30,7 +31,7 @@ const formatDate = (dateString?: string | null): string => {
     });
 }
 
-const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, onEditMatch, onDeleteMatch, onDeleteStockRequest, onMatchCar, view, userRole }) => {
+const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock, onDelete, onEditMatch, onDeleteMatch, onDeleteStockRequest, onMatchCar, view, userRole }) => {
   const canEdit = userRole !== 'user';
   
   // FIX: Explicitly type the Map to fix type inference issues with `match` being `unknown`.
@@ -89,12 +90,19 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                     }
                 }
 
+                const handleAddToStock = () => {
+                    if (onAddToStock) {
+                        onAddToStock(car);
+                    }
+                }
+
                 const editTitle = (view === 'matching' || view === 'sold') ? 'Edit Match Info' : 'Edit Car';
                 
                 const showCarDeleteButton = (view === 'allocation' && userRole === 'executive') || (view === 'stock' && canEdit);
                 const showMatchDeleteButton = view === 'matching' && canEdit;
                 
                 const canBeUnstocked = !!car.stockInDate && car.status !== CarStatus.RESERVED && car.status !== CarStatus.SOLD;
+                const canBeStocked = !car.stockInDate && car.status !== CarStatus.RESERVED && car.status !== CarStatus.SOLD;
                 
                 // Define the main action button's properties based on the view
                 let MainActionIcon = TrashIcon;
@@ -240,9 +248,15 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                                 
                                 {/* Row 2 */}
                                 <button 
-                                    onClick={handleEdit} 
-                                    title="นำรถเข้า Stock" 
-                                    className="p-2 rounded-full transition-colors text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-800/50">
+                                    onClick={handleAddToStock} 
+                                    disabled={!canBeStocked}
+                                    title={canBeStocked ? "นำรถเข้า Stock" : "This car cannot be added to stock"} 
+                                    className={`p-2 rounded-full transition-colors ${
+                                        canBeStocked 
+                                        ? 'text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200 hover:bg-green-50 dark:hover:bg-green-800/50'
+                                        : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                    }`}
+                                >
                                     <ArchiveInIcon />
                                 </button>
                                 <button 
