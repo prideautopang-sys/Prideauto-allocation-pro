@@ -171,9 +171,8 @@ const App: React.FC = () => {
   };
 
   const handleSaveCar = async (formData: CarFormData) => {
-    const isEditing = !!formData.id;
+    const isEditingCar = !!formData.id;
 
-    // --- Split formData into car and match objects ---
     const {
         matchId, matchCustomerName, matchSalesperson, matchSaleDate,
         matchStatus, matchLicensePlate, matchNotes,
@@ -181,58 +180,55 @@ const App: React.FC = () => {
     } = formData;
 
     const carToSave: Car = { ...carData };
-
-    const matchDataToSave = {
-        id: matchId,
-        customerName: matchCustomerName,
-        salesperson: matchSalesperson,
-        saleDate: matchSaleDate,
-        status: matchStatus,
-        licensePlate: matchLicensePlate,
-        notes: matchNotes,
+    const matchData = {
+        id: matchId, carId: carToSave.id!, customerName: matchCustomerName, salesperson: matchSalesperson,
+        saleDate: matchSaleDate, status: matchStatus, licensePlate: matchLicensePlate, notes: matchNotes,
     };
-    
-    // Check if there is any actual data for a match record.
-    const isMatchDataPresent = matchDataToSave.customerName || matchDataToSave.salesperson || matchDataToSave.status;
 
-    // --- Handle Car Status Logic ---
+    const isMatchDataPresent = !!(matchCustomerName || matchSalesperson || matchStatus || matchSaleDate || matchLicensePlate || matchNotes);
+    const hasExistingMatch = !!matchId;
+
+    // --- Car Status Logic ---
     if (isMatchDataPresent) {
-        if (matchDataToSave.status === MatchStatus.DELIVERED && matchDataToSave.saleDate) {
-            carToSave.status = CarStatus.SOLD;
-        } else {
-            carToSave.status = CarStatus.RESERVED;
-        }
-    } else if (carToSave.stockInDate && carToSave.status !== CarStatus.IN_STOCK && carToSave.status !== CarStatus.RESERVED && carToSave.status !== CarStatus.SOLD) {
-        // If stock date is added but no match data, set to In Stock
+        carToSave.status = (matchStatus === MatchStatus.DELIVERED && matchSaleDate) ? CarStatus.SOLD : CarStatus.RESERVED;
+    } else if (hasExistingMatch) { // Match was just cleared
+        carToSave.status = carToSave.stockInDate ? CarStatus.IN_STOCK : CarStatus.UNLOADED;
+    } else if (carToSave.stockInDate && ![CarStatus.IN_STOCK, CarStatus.RESERVED, CarStatus.SOLD].includes(carToSave.status)) {
         carToSave.status = CarStatus.IN_STOCK;
     }
 
-    if (isEditing) {
+    if (isEditingCar) {
         try {
-            // 1. Save Car
+            // 1. Update Car
             const carResponse = await fetch(`/api/cars/${carToSave.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(carToSave)
             });
-            if (!carResponse.ok) throw new Error('Failed to save car');
+            if (!carResponse.ok) throw new Error('Failed to save car data.');
 
-            // 2. Save Match (if data is present)
+            // 2. Update/Create/Delete Match
             if (isMatchDataPresent) {
-                const isEditingMatch = !!matchDataToSave.id;
-                const url = isEditingMatch ? `/api/matches/${matchDataToSave.id}` : '/api/matches';
-                const method = isEditingMatch ? 'PUT' : 'POST';
-
-                const matchPayload = { ...matchDataToSave, carId: carToSave.id! };
-                // Ensure status is set if customer exists
-                if (!matchPayload.status) matchPayload.status = MatchStatus.WAITING_FOR_CONTRACT;
-
+                const url = hasExistingMatch ? `/api/matches/${matchId}` : '/api/matches';
+                const method = hasExistingMatch ? 'PUT' : 'POST';
+                const matchPayload = { ...matchData };
+                if (!matchPayload.status && matchPayload.customerName) {
+                    matchPayload.status = MatchStatus.WAITING_FOR_CONTRACT;
+                }
                 const matchResponse = await fetch(url, {
                     method,
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(matchPayload)
                 });
-                if (!matchResponse.ok) throw new Error('Failed to save match data');
+                if (!matchResponse.ok) throw new Error('Failed to save match data.');
+
+            } else if (hasExistingMatch) {
+                // All match data was cleared, so delete the match
+                const matchResponse = await fetch(`/api/matches/${matchId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!matchResponse.ok) throw new Error('Failed to delete cleared match data.');
             }
             
             await fetchData();
@@ -240,7 +236,7 @@ const App: React.FC = () => {
         } catch (error: any) {
             alert(`Error: ${error.message}`);
         }
-    } else { // Logic for CREATING a new car
+    } else { // Creating a NEW car
         try {
             const response = await fetch('/api/cars', {
                 method: 'POST',
@@ -249,7 +245,7 @@ const App: React.FC = () => {
             });
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.message || 'Failed to save car');
+                throw new Error(err.message || 'Failed to save new car');
             }
             await fetchData();
             handleCloseModals();
