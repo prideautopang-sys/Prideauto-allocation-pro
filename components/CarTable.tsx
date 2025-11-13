@@ -83,13 +83,28 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                 }
 
                 const editTitle = (view === 'matching' || view === 'sold') ? 'Edit Match Info' : 'Edit Car';
-                const deleteTitle = view === 'stock' ? 'Remove from Stock' : view === 'matching' ? 'Delete Match' : 'Delete Car';
                 
                 const showCarDeleteButton = (view === 'allocation' && userRole === 'executive') || (view === 'stock' && canEdit);
                 const showMatchDeleteButton = view === 'matching' && canEdit;
-                const showUnlinkButton = view === 'allocation' && !!match;
-                const showUnstockButton = view === 'allocation' && !!car.stockInDate && car.status !== CarStatus.RESERVED && car.status !== CarStatus.SOLD;
                 
+                const showUnlinkButton = view === 'allocation' && !!match;
+                const canBeUnstocked = !!car.stockInDate && car.status !== CarStatus.RESERVED && car.status !== CarStatus.SOLD;
+                
+                // Define the main action button's properties based on the view
+                let MainActionIcon = TrashIcon;
+                let mainActionTitle = 'Delete Car';
+                let mainActionClassName = 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50';
+
+                if (view === 'matching') {
+                    MainActionIcon = UnlinkIcon;
+                    mainActionTitle = 'Unlink Match';
+                    mainActionClassName = 'text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-200 hover:bg-orange-50 dark:hover:bg-orange-800/50';
+                } else if (view === 'stock') {
+                    MainActionIcon = ArchiveOutIcon;
+                    mainActionTitle = 'Remove from Stock';
+                    mainActionClassName = 'text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-800/50';
+                }
+
                 return (
                 <div key={car.id} className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 sm:p-6 flex flex-col sm:flex-row gap-4">
                   {/* Left Side: Number and Dates */}
@@ -202,8 +217,17 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                                     <UnlinkIcon />
                                 </button>
                             )}
-                            {showUnstockButton && (
-                                <button onClick={handleUnstock} title="ลบการ Stock" className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 p-2 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-800/50">
+                            {view === 'allocation' && (
+                                <button 
+                                    onClick={handleUnstock} 
+                                    disabled={!canBeUnstocked}
+                                    title={canBeUnstocked ? "ลบการ Stock" : "Cannot remove from stock"} 
+                                    className={`p-2 rounded-full transition-colors ${
+                                        canBeUnstocked 
+                                        ? 'text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-800/50'
+                                        : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                    }`}
+                                >
                                     <ArchiveOutIcon />
                                 </button>
                             )}
@@ -214,14 +238,14 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onDelete, on
                                 <button
                                     onClick={handleDelete}
                                     disabled={isSold && view !== 'matching'}
-                                    title={isSold && view !== 'matching' ? "Cannot delete a sold car" : deleteTitle}
+                                    title={isSold && view !== 'matching' ? "Cannot delete a sold car" : mainActionTitle}
                                     className={`p-2 rounded-full transition-colors ${
                                         isSold && view !== 'matching'
                                         ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                        : 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-800/50'
+                                        : mainActionClassName
                                     }`}
                                 >
-                                    <TrashIcon />
+                                    <MainActionIcon />
                                 </button>
                             )}
                         </div>
