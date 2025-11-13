@@ -772,7 +772,7 @@ const App: React.FC = () => {
               <div className="flex-shrink-0">
                   <LogoUploader logo={logo} userRole={user.role} onLogoUpdate={fetchLogo} />
               </div>
-              <div className="hidden md:block">
+              <div className="hidden lg:block">
                 <div className="ml-10 flex items-baseline space-x-4">
                   {navigationItems.map(item => (
                     <button
@@ -893,7 +893,7 @@ const App: React.FC = () => {
           </div>
       )}
 
-      <main className="pb-16 md:pb-0">
+      <main className="pb-16 lg:pb-0">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             {renderContent()}
         </div>
@@ -955,7 +955,7 @@ const App: React.FC = () => {
         />
 
         {/* --- Mobile Navigation --- */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_5px_rgba(0,0,0,0.1)] z-30">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_5px_rgba(0,0,0,0.1)] z-30">
             <div className="flex justify-around items-center h-16">
                 {navigationItems.map(item => (
                     <button
