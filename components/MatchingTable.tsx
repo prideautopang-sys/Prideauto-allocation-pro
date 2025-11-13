@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Match, Car } from '../types';
-import { EditIcon, TrashIcon } from './icons';
+import { EditIcon, UnlinkIcon } from './icons';
 
 type UserRole = 'executive' | 'admin' | 'user';
 
@@ -82,8 +82,8 @@ const MatchingTable: React.FC<MatchingTableProps> = ({ matches, cars, onEdit, on
                       <button onClick={() => onEdit(match)} title="Edit Match" className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-200 p-2 rounded-full hover:bg-sky-50 dark:hover:bg-sky-800/50">
                         <EditIcon />
                       </button>
-                      <button onClick={() => onDelete(match)} title="Delete Match" className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-800/50">
-                        <TrashIcon />
+                      <button onClick={() => onDelete(match)} title="Unlink Match" className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-800/50">
+                        <UnlinkIcon />
                       </button>
                     </div>
                   </td>
