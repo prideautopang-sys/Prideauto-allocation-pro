@@ -41,67 +41,59 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
               return res.status(400).json({ message: 'No cars to import.' });
           }
 
-          // OPTIMIZATION: Use Bulk Insert in chunks to prevent timeout
-          // Split into chunks of 50 to keep query size manageable
-          const CHUNK_SIZE = 50;
-          let successCount = 0;
-          let skippedCount = 0;
-          const errors: string[] = [];
+          const results: string[] = [];
+          const errors: { vin: string, error: string }[] = [];
 
-          for (let i = 0; i < carsToImport.length; i += CHUNK_SIZE) {
-              const chunk = carsToImport.slice(i, i + CHUNK_SIZE);
-              const values: any[] = [];
-              const placeholders: string[] = [];
-
-              chunk.forEach((car, idx) => {
-                  const offset = idx * 14; // 14 parameters per car
-                  placeholders.push(`(
-                      $${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, 
-                      $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, 
-                      $${offset + 9}, $${offset + 10}, $${offset + 11}, $${offset + 12}, 
-                      $${offset + 13}, $${offset + 14}
-                  )`);
-                  
-                  values.push(
-                      car.dealerCode, 
-                      car.dealerName, 
-                      car.model, 
-                      car.vin, 
-                      car.frontMotorNo ?? null, 
-                      car.rearMotorNo ?? null, 
-                      car.batteryNo ?? null, 
-                      car.engineNo ?? null, 
-                      car.color, 
-                      car.carType ?? null, 
-                      car.allocationDate, 
-                      car.poType ?? null,
-                      car.price, 
-                      car.status || 'รอขึ้นเทรลเลอร์'
-                  );
-              });
-
-              // Use ON CONFLICT DO NOTHING to handle duplicate VINs gracefully without stopping the batch
-              const query = `
-                INSERT INTO cars (
-                    dealer_code, dealer_name, model, vin, front_motor_no, rear_motor_no, 
-                    battery_no, engine_no, color, car_type, allocation_date, po_type, 
-                    price, status
-                ) VALUES ${placeholders.join(', ')}
-                ON CONFLICT (vin) DO NOTHING
-              `;
-              
+          // Function to insert a single car (reused in batch)
+          const insertCar = async (car: Car) => {
               try {
-                  const { rowCount } = await sql(query, values);
-                  successCount += (rowCount || 0);
-                  skippedCount += (chunk.length - (rowCount || 0));
+                  const { 
+                    dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
+                    batteryNo, engineNo, color, carType, allocationDate, poType,
+                    price, status 
+                  } = car;
+                  
+                   const query = `
+                    INSERT INTO cars (
+                        dealer_code, dealer_name, model, vin, front_motor_no, rear_motor_no, 
+                        battery_no, engine_no, color, car_type, allocation_date, po_type, 
+                        price, status
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                    RETURNING id;
+                  `;
+                  // Sanitize params
+                  const params = [
+                      dealerCode, dealerName, model, vin, 
+                      frontMotorNo ?? null, rearMotorNo ?? null, batteryNo ?? null, engineNo ?? null, 
+                      color, carType ?? null, allocationDate, poType ?? null,
+                      price, status || 'รอขึ้นเทรลเลอร์'
+                  ];
+                  
+                  await sql(query, params);
+                  return { success: true, vin };
               } catch (err: any) {
-                  console.error(`Batch import failed at chunk ${i}:`, err);
-                  errors.push(`Chunk ${i / CHUNK_SIZE + 1} failed: ${err.message}`);
+                  console.error(`Failed to import VIN ${car.vin}:`, err);
+                  return { success: false, vin: car.vin, error: err.message };
+              }
+          };
+
+          // Process in chunks to avoid overwhelming the DB connection pool but still be fast
+          const BATCH_SIZE = 20;
+          for (let i = 0; i < carsToImport.length; i += BATCH_SIZE) {
+              const chunk = carsToImport.slice(i, i + BATCH_SIZE);
+              const chunkResults = await Promise.all(chunk.map(car => insertCar(car)));
+              
+              for (const res of chunkResults) {
+                  if (res.success) {
+                      results.push(res.vin as string);
+                  } else {
+                      errors.push({ vin: res.vin as string, error: res.error as string });
+                  }
               }
           }
 
           return res.status(201).json({ 
-              message: `Import complete. Added: ${successCount}, Skipped (Duplicates): ${skippedCount}.`, 
+              message: `Imported ${results.length} cars.`, 
               errors: errors.length > 0 ? errors : undefined 
           });
       }

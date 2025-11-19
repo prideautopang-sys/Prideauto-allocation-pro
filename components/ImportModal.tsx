@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Car, CarStatus } from '../types';
 import { XIcon } from './icons';
@@ -18,7 +19,9 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
     setError(null);
     const newCars: Car[] = [];
     const errors: string[] = [];
-    const processingRows = pastedText.trim().split('\n').filter(row => row.trim() !== '');
+    
+    // Split by newline, handling both \n and \r\n (Windows style from Excel)
+    const processingRows = pastedText.trim().split(/\r?\n/).filter(row => row.trim() !== '');
 
     if (processingRows.length === 0) {
         setError('กรุณาวางข้อมูลก่อนนำเข้า');
