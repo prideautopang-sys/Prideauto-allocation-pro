@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Car, CarStatus, Match, MatchStatus, Salesperson, AppUser, CarFormData } from './types';
 import CarTable from './components/CarTable';
@@ -461,8 +462,7 @@ const App: React.FC = () => {
   
   const handleBatchImport = async (newCars: Car[]) => {
       try {
-          // Use the centralized /api/cars endpoint with POST array for batch import
-          const response = await fetch('/api/cars', {
+          const response = await fetch('/api/cars/batch', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify(newCars)
@@ -480,8 +480,7 @@ const App: React.FC = () => {
   
   const handleBatchAddToStock = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => {
       try {
-          // Use the centralized /api/cars endpoint with PUT for batch update
-          const response = await fetch('/api/cars', {
+          const response = await fetch('/api/cars/batch-stock', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({ carIds, stockInDate, stockLocation, stockNo })
