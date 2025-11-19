@@ -34,11 +34,13 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                 WHERE id = $18
                 RETURNING *;
             `;
+            
+            // FIX: Map undefined values to null because 'pg' does not support undefined parameters
             const params = [
                 dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
                 batteryNo, engineNo, color, carType, allocationDate, poType,
                 price, status, stockInDate, stockLocation, stockNo, id
-            ];
+            ].map(val => val === undefined ? null : val);
             
             const { rows } = await sql(query, params);
             if (rows.length === 0) {
