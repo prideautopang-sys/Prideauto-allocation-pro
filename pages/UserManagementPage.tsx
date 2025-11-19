@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppUser } from '../types';
 import { PlusIcon, ArrowLeftIcon } from '../components/icons';
@@ -61,7 +60,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ token, currentU
 
   const handleSaveUser = async (user: AppUser) => {
     const isEditing = !!editingUser;
-    const url = isEditing ? `/api/users?id=${user.id}` : '/api/users';
+    const url = isEditing ? `/api/users/${user.id}` : '/api/users';
     const method = isEditing ? 'PUT' : 'POST';
 
     try {
@@ -93,7 +92,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ token, currentU
   const handleConfirmDelete = async () => {
     if (!userToDelete) return;
     try {
-        const response = await fetch(`/api/users?id=${userToDelete.id}`, { 
+        const response = await fetch(`/api/users/${userToDelete.id}`, { 
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` } 
         });

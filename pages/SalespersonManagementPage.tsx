@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Salesperson } from '../types';
 import { PlusIcon, ArrowLeftIcon } from '../components/icons';
@@ -33,10 +32,7 @@ const SalespersonManagementPage: React.FC<SalespersonManagementPageProps> = ({ t
 
   const handleSave = async (sp: Salesperson) => {
     const isEditing = !!editingSalesperson;
-    // Use the consolidated endpoint
-    const url = isEditing 
-        ? `/api/users?resource=salespersons&id=${sp.id}` 
-        : '/api/users?resource=salespersons';
+    const url = isEditing ? `/api/salespersons/${sp.id}` : '/api/salespersons';
     const method = isEditing ? 'PUT' : 'POST';
 
     try {

@@ -22,6 +22,5 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "api", "lib"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
