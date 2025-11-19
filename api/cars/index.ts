@@ -111,12 +111,16 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
     }
   }
 
-  // PUT: Batch Stock Update
+  // PUT: Batch Stock Update (Consolidated here to save function slots)
   if (req.method === 'PUT') {
       const { carIds, stockInDate, stockLocation, stockNo } = req.body;
       
       // Check if this is a batch stock request
       if (carIds && Array.isArray(carIds)) {
+          if (userRole !== 'executive' && userRole !== 'admin') {
+              return res.status(403).json({ message: 'Forbidden' });
+          }
+
           try {
              if (carIds.length === 0) {
                 return res.status(400).json({ message: 'No car IDs provided' });
@@ -142,7 +146,9 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
               return res.status(500).json({ message: 'Internal Server Error' });
           }
       }
-      // Note: Single car updates are handled by [id].ts, so we don't need an else here for standard PUTs
+      // Note: Single car updates are handled by [id].ts, but only if the URL has an ID.
+      // Since this handler is for /api/cars (index), any PUT here without array logic is invalid.
+      return res.status(400).json({ message: 'Invalid request format for batch update' });
   }
 
   return res.status(405).json({ message: 'Method Not Allowed' });
