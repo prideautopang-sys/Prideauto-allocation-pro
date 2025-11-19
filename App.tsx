@@ -125,11 +125,11 @@ const App: React.FC = () => {
       const fetches = [
         fetch('/api/cars', { headers: { 'Authorization': `Bearer ${token}` } }),
         fetch('/api/matches', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/salespersons?status=active', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/api/users?resource=salespersons&status=active', { headers: { 'Authorization': `Bearer ${token}` } }),
       ];
 
       if (user?.role === 'executive') {
-        fetches.push(fetch('/api/salespersons', { headers: { 'Authorization': `Bearer ${token}` } }));
+        fetches.push(fetch('/api/users?resource=salespersons', { headers: { 'Authorization': `Bearer ${token}` } }));
       }
 
       const responses = await Promise.all(fetches);

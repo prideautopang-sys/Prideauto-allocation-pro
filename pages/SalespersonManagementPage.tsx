@@ -33,7 +33,10 @@ const SalespersonManagementPage: React.FC<SalespersonManagementPageProps> = ({ t
 
   const handleSave = async (sp: Salesperson) => {
     const isEditing = !!editingSalesperson;
-    const url = isEditing ? `/api/salespersons?id=${sp.id}` : '/api/salespersons';
+    // Use the consolidated endpoint
+    const url = isEditing 
+        ? `/api/users?resource=salespersons&id=${sp.id}` 
+        : '/api/users?resource=salespersons';
     const method = isEditing ? 'PUT' : 'POST';
 
     try {
