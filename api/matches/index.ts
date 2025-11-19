@@ -1,3 +1,4 @@
+
 import { VercelResponse } from '@vercel/node';
 import { sql } from '../../lib/db.js';
 import { withAuth, AuthenticatedRequest } from '../middleware/withAuth.js';
@@ -42,7 +43,16 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *;
       `;
-      const params = [carId, customerName, salesperson, saleDate || null, status, licensePlate, notes];
+      // Use nullish coalescing to ensure undefined becomes null
+      const params = [
+        carId, 
+        customerName, 
+        salesperson, 
+        saleDate || null, 
+        status, 
+        licensePlate ?? null, 
+        notes ?? null
+      ];
       
       const { rows } = await sql(query, params);
       return res.status(201).json(rows[0]);

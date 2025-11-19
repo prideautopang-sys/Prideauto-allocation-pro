@@ -34,10 +34,27 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                 WHERE id = $18
                 RETURNING *;
             `;
+            
+            // Convert undefined to null for optional fields to avoid DB errors
             const params = [
-                dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
-                batteryNo, engineNo, color, carType, allocationDate, poType,
-                price, status, stockInDate, stockLocation, stockNo, id
+                dealerCode, 
+                dealerName, 
+                model, 
+                vin, 
+                frontMotorNo ?? null, 
+                rearMotorNo ?? null,
+                batteryNo ?? null, 
+                engineNo ?? null, 
+                color, 
+                carType ?? null, 
+                allocationDate, 
+                poType ?? null,
+                price, 
+                status, 
+                stockInDate ?? null, 
+                stockLocation ?? null, 
+                stockNo ?? null, 
+                id
             ];
             
             const { rows } = await sql(query, params);
@@ -57,7 +74,6 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
 
     // DELETE a car
     if (req.method === 'DELETE') {
-        // Authorization: Only 'executive' can delete.
         if (userRole !== 'executive') {
             return res.status(403).json({ message: 'Forbidden: You do not have permission to delete cars.' });
         }

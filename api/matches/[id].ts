@@ -1,3 +1,4 @@
+
 import { VercelResponse } from '@vercel/node';
 import { sql } from '../../lib/db.js';
 import { withAuth, AuthenticatedRequest } from '../middleware/withAuth.js';
@@ -30,7 +31,18 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                 WHERE id = $8
                 RETURNING *;
             `;
-            const params = [carId, customerName, salesperson, saleDate || null, status, licensePlate, notes, id];
+            
+            // Ensure optional fields are null if undefined/empty
+            const params = [
+                carId, 
+                customerName, 
+                salesperson, 
+                saleDate || null, 
+                status, 
+                licensePlate ?? null, 
+                notes ?? null, 
+                id
+            ];
 
             const { rows } = await sql(query, params);
             if (rows.length === 0) {

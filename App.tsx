@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Car, CarStatus, Match, MatchStatus, Salesperson, AppUser, CarFormData } from './types';
 import CarTable from './components/CarTable';
@@ -462,7 +461,7 @@ const App: React.FC = () => {
   
   const handleBatchImport = async (newCars: Car[]) => {
       try {
-          const response = await fetch('/api/cars/batch', {
+          const response = await fetch('/api/cars', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify(newCars)
@@ -480,7 +479,7 @@ const App: React.FC = () => {
   
   const handleBatchAddToStock = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => {
       try {
-          const response = await fetch('/api/cars/batch-stock', {
+          const response = await fetch('/api/cars', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({ carIds, stockInDate, stockLocation, stockNo })
