@@ -54,11 +54,13 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *;
       `;
+      
+      // Ensure undefined values are converted to null
       const params = [
           dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
           batteryNo, engineNo, color, carType, allocationDate, poType,
           price, status
-      ];
+      ].map(val => val === undefined ? null : val);
 
       const { rows } = await sql(query, params);
       return res.status(201).json(rows[0]);
