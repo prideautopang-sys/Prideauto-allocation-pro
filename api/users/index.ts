@@ -1,6 +1,7 @@
+
 import { VercelResponse } from '@vercel/node';
 import { sql } from '../../lib/db.js';
-import { withAuth, AuthenticatedRequest } from '../middleware/withAuth.js';
+import { withAuth, AuthenticatedRequest } from '../../lib/withAuth.js';
 import { AppUser } from '../../types.js';
 
 // Only executives can manage users

@@ -1,6 +1,7 @@
+
 import { VercelResponse } from '@vercel/node';
 import { sql } from '../../lib/db.js';
-import { withAuth, AuthenticatedRequest } from '../middleware/withAuth.js';
+import { withAuth, AuthenticatedRequest } from '../../lib/withAuth.js';
 import { Salesperson } from '../../types.js';
 
 const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
