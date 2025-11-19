@@ -227,8 +227,8 @@ const App: React.FC = () => {
     try {
         const apiCalls: Promise<Response>[] = [];
 
-        // 1. Always update the car
-        apiCalls.push(fetch(`/api/cars/${carToSave.id}`, {
+        // 1. Always update the car using query param ID
+        apiCalls.push(fetch(`/api/cars?id=${carToSave.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(carToSave)
@@ -247,7 +247,7 @@ const App: React.FC = () => {
             };
 
             if (hasExistingMatch) { // Update existing match
-                apiCalls.push(fetch(`/api/matches/${matchId}`, {
+                apiCalls.push(fetch(`/api/matches?id=${matchId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ ...matchPayload, id: matchId })
@@ -260,7 +260,7 @@ const App: React.FC = () => {
                 }));
             }
         } else if (hasExistingMatch) { // Delete cleared match
-            apiCalls.push(fetch(`/api/matches/${matchId}`, {
+            apiCalls.push(fetch(`/api/matches?id=${matchId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             }));
@@ -298,7 +298,7 @@ const App: React.FC = () => {
         if (deleteRequestContext === 'stock') {
             // "Delete" from stock means resetting its stock status
             const updatedCar = { ...carToDelete, status: CarStatus.UNLOADED, stockInDate: undefined, stockLocation: undefined, stockNo: undefined };
-            const response = await fetch(`/api/cars/${carToDelete.id}`, {
+            const response = await fetch(`/api/cars?id=${carToDelete.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(updatedCar)
@@ -307,7 +307,7 @@ const App: React.FC = () => {
 
         } else if (deleteRequestContext === 'allocation') {
             // Deleting from allocation is a permanent delete.
-            const response = await fetch(`/api/cars/${carToDelete.id}`, { 
+            const response = await fetch(`/api/cars?id=${carToDelete.id}`, { 
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` } 
             });
@@ -344,7 +344,7 @@ const App: React.FC = () => {
             stockLocation: undefined, 
             stockNo: undefined 
         };
-        const response = await fetch(`/api/cars/${carToUnstock.id}`, {
+        const response = await fetch(`/api/cars?id=${carToUnstock.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(updatedCar)
@@ -383,7 +383,7 @@ const App: React.FC = () => {
 
   const handleSaveMatch = async (match: Match) => {
     const isEditing = !!editingMatch;
-    const url = isEditing ? `/api/matches/${match.id}` : '/api/matches';
+    const url = isEditing ? `/api/matches?id=${match.id}` : '/api/matches';
     const method = isEditing ? 'PUT' : 'POST';
 
     if (match.status === MatchStatus.DELIVERED && !match.saleDate) {
@@ -404,7 +404,7 @@ const App: React.FC = () => {
         const newStatus = (match.status === MatchStatus.DELIVERED && match.saleDate) ? CarStatus.SOLD : CarStatus.RESERVED;
         if (carToUpdate.status !== newStatus) {
             const updatedCar = { ...carToUpdate, status: newStatus };
-            const carResponse = await fetch(`/api/cars/${updatedCar.id}`, {
+            const carResponse = await fetch(`/api/cars?id=${updatedCar.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(updatedCar)
@@ -428,7 +428,7 @@ const App: React.FC = () => {
     if (!matchToDelete) return;
 
     try {
-        const deleteResponse = await fetch(`/api/matches/${matchToDelete.id}`, { 
+        const deleteResponse = await fetch(`/api/matches?id=${matchToDelete.id}`, { 
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` } 
         });
@@ -439,7 +439,7 @@ const App: React.FC = () => {
             const newStatus = carToUpdate.stockInDate ? CarStatus.IN_STOCK : CarStatus.UNLOADED;
             if (carToUpdate.status !== newStatus) {
                 const updatedCar = { ...carToUpdate, status: newStatus };
-                const carResponse = await fetch(`/api/cars/${updatedCar.id}`, {
+                const carResponse = await fetch(`/api/cars?id=${updatedCar.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(updatedCar)
@@ -517,7 +517,7 @@ const App: React.FC = () => {
               stockLocation,
               stockNo
           };
-          const response = await fetch(`/api/cars/${carId}`, {
+          const response = await fetch(`/api/cars?id=${carId}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify(updatedCar)

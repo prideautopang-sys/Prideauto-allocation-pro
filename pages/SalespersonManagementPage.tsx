@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Salesperson } from '../types';
 import { PlusIcon, ArrowLeftIcon } from '../components/icons';
@@ -32,7 +33,7 @@ const SalespersonManagementPage: React.FC<SalespersonManagementPageProps> = ({ t
 
   const handleSave = async (sp: Salesperson) => {
     const isEditing = !!editingSalesperson;
-    const url = isEditing ? `/api/salespersons/${sp.id}` : '/api/salespersons';
+    const url = isEditing ? `/api/salespersons?id=${sp.id}` : '/api/salespersons';
     const method = isEditing ? 'PUT' : 'POST';
 
     try {
