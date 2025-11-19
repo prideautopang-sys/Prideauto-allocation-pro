@@ -1,0 +1,5 @@
+{
+  "name": "Car Allocation Pro",
+  "description": "An application to manage a car dealership's inventory, tracking vehicles from acquisition to sale, with features for booking, matching, and calculating sales commissions.",
+  "requestFramePermissions": []
+}
