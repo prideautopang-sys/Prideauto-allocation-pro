@@ -1,4 +1,3 @@
-
 import { VercelResponse } from '@vercel/node';
 import { sql } from '../../lib/db.js';
 import { withAuth, AuthenticatedRequest } from '../middleware/withAuth.js';
@@ -31,19 +30,7 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                 WHERE id = $8
                 RETURNING *;
             `;
-            
-            // FIX: Handle undefined/empty strings for dates and optional fields
-            // Map undefined to null for DB safety
-            const params = [
-                carId, 
-                customerName, 
-                salesperson, 
-                saleDate || null, 
-                status, 
-                licensePlate, 
-                notes, 
-                id
-            ].map(v => v === undefined ? null : v);
+            const params = [carId, customerName, salesperson, saleDate || null, status, licensePlate, notes, id];
 
             const { rows } = await sql(query, params);
             if (rows.length === 0) {
