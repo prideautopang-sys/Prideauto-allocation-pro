@@ -9,7 +9,7 @@ declare var XLSX: any;
 interface ImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (cars: Car[]) => void; // Note: onImport triggers the refresh, actual save happens inside modal for progress
+  onSuccess: () => void;
 }
 
 // Helper to parse Excel serial dates
@@ -20,7 +20,7 @@ const excelDateToJSDate = (serial: number) => {
    return date_info.toISOString().split('T')[0];
 }
 
-const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) => {
+const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -113,9 +113,6 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
                         continue;
                     }
                 } else {
-                     // Default to today if missing? Or fail. Let's set a default for safety or fail.
-                     // validationErrors.push(`Row ${i + 1}: Missing Allocation Date.`);
-                     // continue;
                      allocationDate = new Date().toISOString().split('T')[0];
                 }
 
@@ -146,7 +143,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
             }
 
             if (carsToImport.length === 0) {
-                setLogs(prev => [...prev, { type: 'error', message: 'ไม่พบข้อมูลรถยนต์ที่ถูกต้องในไฟล์' }]);
+                setLogs(prev => [...prev, { type: 'error', message: 'ไม่พบข้อมูลรถยนต์ที่ถูกต้องในไฟล์ (ตรวจสอบแถว B4 เป็นต้นไป)' }]);
                 setIsUploading(false);
                 return;
             }
@@ -176,8 +173,6 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
                     const result = await response.json();
 
                     if (response.ok) {
-                        // Calculate how many actually succeeded from the message or logic
-                        // The API returns "Imported X cars" and an optional "errors" array
                         const batchFailures = result.errors ? result.errors.length : 0;
                         const batchSuccess = batch.length - batchFailures;
                         
@@ -206,14 +201,14 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
 
             // Final Summary
             setLogs(prev => [
+                { type: 'success', message: `----------------------------------------` },
                 { type: 'success', message: `ประมวลผลเสร็จสิ้น: สำเร็จ ${successCount} คัน` },
-                ...(failCount > 0 ? [{ type: 'error' as const, message: `ล้มเหลว ${failCount} คัน (ดูรายละเอียดด้านล่าง)` }] : [])
+                ...(failCount > 0 ? [{ type: 'error' as const, message: `ล้มเหลว ${failCount} คัน (ดูรายละเอียดด้านบน)` }] : [])
             ]);
 
             setIsUploading(false);
             if (successCount > 0) {
-                // Trigger parent refresh without closing modal immediately so user can see logs
-                onImport([]); 
+                onSuccess();
             }
 
         } catch (error: any) {
@@ -243,11 +238,11 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
                     <DocumentDownloadIcon />
                     <div className="ml-3">
                         <h3 className="text-sm font-bold text-blue-800 dark:text-blue-200">รูปแบบไฟล์ Excel ที่รองรับ</h3>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1 leading-relaxed">
                             1. ไฟล์นามสกุล <strong>.xlsx</strong> หรือ <strong>.xls</strong><br/>
                             2. หัวตารางอยู่ที่แถว <strong>B3 ถึง N3</strong><br/>
                             3. ข้อมูลเริ่มที่แถว <strong>B4</strong> เป็นต้นไป<br/>
-                            4. คอลัมน์ต้องเรียงตามลำดับ: Dealer Code, Name, Model, VIN, F.Motor, R.Motor, Battery, Engine, Color, Type, Date, PO, Price
+                            4. คอลัมน์เรียงตามลำดับ: Dealer Code (B), Name, Model, VIN, F.Motor, R.Motor, Battery, Engine, Color, Type, Date, PO, Price (N)
                         </p>
                     </div>
                 </div>
@@ -290,7 +285,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
             {/* Logs Area */}
             {logs.length > 0 && (
                 <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4 h-48 overflow-y-auto">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Process Log</h4>
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">สถานะการทำงาน</h4>
                     <ul className="space-y-1">
                         {logs.map((log, idx) => (
                             <li key={idx} className={`text-sm flex items-start ${log.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>

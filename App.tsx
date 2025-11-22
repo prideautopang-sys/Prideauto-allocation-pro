@@ -459,22 +459,10 @@ const App: React.FC = () => {
     setMatchToDelete(null);
   };
   
-  const handleBatchImport = async (newCars: Car[]) => {
-      try {
-          const response = await fetch('/api/cars', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify(newCars)
-          });
-          if (!response.ok) {
-              const err = await response.json();
-              throw new Error(err.message || 'Failed to import cars');
-          }
-          await fetchData();
-          setIsImportModalOpen(false);
-      } catch (error: any) {
-          alert(`Error importing cars: ${error.message}`);
-      }
+  // Simply refresh data, no need to post cars as ImportModal handles the upload
+  const handleImportSuccess = async () => {
+      await fetchData();
+      // We don't close the modal automatically to let the user see the logs/summary
   };
   
   const handleBatchAddToStock = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => {
@@ -908,7 +896,7 @@ const App: React.FC = () => {
         salespersons={salespersons}
         userRole={user!.role}
       />
-      <ImportModal isOpen={isImportModalOpen} onClose={handleCloseModals} onImport={handleBatchImport} />
+      <ImportModal isOpen={isImportModalOpen} onClose={handleCloseModals} onSuccess={handleImportSuccess} />
       <AddFromAllocationModal 
         isOpen={isAddFromAllocationModalOpen} 
         onClose={handleCloseModals}

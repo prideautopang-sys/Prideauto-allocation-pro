@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { UserIcon, LockClosedIcon } from '../components/icons';
@@ -109,7 +110,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ logo }) => {
       </div>
       <footer className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
         <p>© 2025 PRIDE AUTO Car Allocation Pro. All rights reserved.</p>
-        <p className="mt-1">Version 1.0.0</p>
+        <p className="mt-1">Version 1.1.0</p>
       </footer>
     </div>
   );
