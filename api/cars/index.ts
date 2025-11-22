@@ -73,7 +73,19 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                   return { success: true, vin };
               } catch (err: any) {
                   console.error(`Failed to import VIN ${car.vin}:`, err);
-                  return { success: false, vin: car.vin, error: err.message };
+                  let errorMessage = err.message;
+                  
+                  // Handle Unique Violations more gracefully
+                  if (err.code === '23505') {
+                      if (err.detail.includes('vin')) errorMessage = 'เลขตัวถัง (VIN) ซ้ำในระบบ';
+                      else if (err.detail.includes('front_motor_no')) errorMessage = 'เลขมอเตอร์หน้าซ้ำในระบบ';
+                      else if (err.detail.includes('rear_motor_no')) errorMessage = 'เลขมอเตอร์หลังซ้ำในระบบ';
+                      else if (err.detail.includes('battery_no')) errorMessage = 'เลขแบตเตอรี่ซ้ำในระบบ';
+                      else if (err.detail.includes('engine_no')) errorMessage = 'เลขเครื่องยนต์ซ้ำในระบบ';
+                      else errorMessage = 'ข้อมูลซ้ำในระบบ (Unique Constraint)';
+                  }
+
+                  return { success: false, vin: car.vin, error: errorMessage };
               }
           };
 
@@ -131,7 +143,7 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
     } catch (error: any) {
         console.error('Error creating car:', error);
         if (error.code === '23505') {
-            return res.status(409).json({ message: `A car with VIN ${req.body.vin || 'unknown'} already exists.` });
+            return res.status(409).json({ message: `A car with this VIN/Motor/Battery number already exists.` });
         }
         return res.status(500).json({ message: 'Internal Server Error' });
     }
