@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Car, CarStatus } from '../types';
 import { XIcon, DocumentDownloadIcon, ArchiveInIcon } from './icons';
@@ -26,6 +25,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<{type: 'success' | 'error', message: string}[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   if (!isOpen) return null;
 
@@ -34,6 +34,38 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
           setFile(e.target.files[0]);
           setLogs([]);
           setProgress(0);
+      }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          const droppedFile = e.dataTransfer.files[0];
+          // Simple validation for excel types
+          if (droppedFile.name.endsWith('.xlsx') || droppedFile.name.endsWith('.xls')) {
+              setFile(droppedFile);
+              setLogs([]);
+              setProgress(0);
+          } else {
+              alert('กรุณาอัพโหลดไฟล์ Excel (.xlsx หรือ .xls) เท่านั้น');
+          }
+      }
+  };
+
+  const handleClickZone = () => {
+      if (!isUploading && fileInputRef.current) {
+          fileInputRef.current.click();
       }
   };
 
@@ -249,25 +281,44 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
                 </div>
             </div>
 
-            {/* File Input */}
+            {/* Drag and Drop Zone / File Input */}
             <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เลือกไฟล์ Excel</label>
-                <div className="relative">
-                     <input
+                <div 
+                    onClick={handleClickZone}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                        isDragOver 
+                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20' 
+                        : 'border-gray-300 dark:border-gray-600 hover:border-sky-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    }`}
+                >
+                    <input 
                         ref={fileInputRef}
                         type="file"
+                        className="hidden"
                         accept=".xlsx, .xls"
                         onChange={handleFileChange}
                         disabled={isUploading}
-                        className="block w-full text-sm text-gray-500 dark:text-gray-400
-                            file:mr-4 file:py-2.5 file:px-4
-                            file:rounded-lg file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-sky-50 file:text-sky-700
-                            dark:file:bg-sky-900/50 dark:file:text-sky-300
-                            hover:file:bg-sky-100 dark:hover:file:bg-sky-800
-                            cursor-pointer border border-gray-200 dark:border-gray-600 rounded-lg"
                     />
+                    
+                    {file ? (
+                        <div className="text-center animate-fade-in">
+                            <DocumentDownloadIcon /> 
+                            <p className="text-sm font-medium text-gray-900 dark:text-white mt-2 break-all">{file.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">คลิกหรือลากไฟล์ใหม่มาวางเพื่อเปลี่ยน</p>
+                        </div>
+                    ) : (
+                        <div className="text-center">
+                             <ArchiveInIcon />
+                             <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                                <span className="font-semibold text-sky-600 hover:text-sky-500">คลิกเพื่อเลือกไฟล์</span> หรือลากไฟล์มาวางที่นี่
+                             </p>
+                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">รองรับไฟล์ .xlsx, .xls</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -317,8 +368,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
                 </>
             ) : (
                 <>
-                    <ArchiveInIcon /> 
-                    <span className="ml-2">เริ่มอัพโหลด</span>
+                    <ArchiveInIcon className="h-5 w-5 mr-2" /> 
+                    <span>เริ่มอัพโหลด</span>
                 </>
             )}
           </button>
