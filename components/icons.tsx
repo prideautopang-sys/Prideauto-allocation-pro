@@ -147,12 +147,11 @@ export const ArchiveInIcon = () => (
     </svg>
 );
 
-// UPDATED ICON - Represents Remove from Stock (Archive Box)
+// UPDATED ICON - Represents Remove from Stock (Archive Box with X)
 export const ArchiveOutIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 8v13H3V8" />
-        <rect x="1" y="3" width="22" height="5" />
-        <line x1="10" y1="12" x2="14" y2="12" />
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10 12l4 4m0-4l-4 4" />
     </svg>
 );
 
