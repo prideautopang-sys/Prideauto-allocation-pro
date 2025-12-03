@@ -38,10 +38,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ logo }) => {
         <div className="bg-white/70 dark:bg-gray-800/60 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-2xl w-full border border-white/50 dark:border-gray-700/50">
           <div className="flex justify-center mb-8">
              {logo ? (
-                <img src={logo} alt="Company Logo" className="max-h-24 object-contain drop-shadow-md transition-transform hover:scale-105 duration-300" />
+                <img src={logo} alt="Company Logo" className="max-h-24 object-contain transition-transform hover:scale-105 duration-300" />
               ) : (
-                <div className="p-2 bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-lg backdrop-blur-sm">
-                  <div className="w-48 h-20 border-2 border-gray-100 dark:border-gray-600 flex flex-row items-center justify-center bg-white dark:bg-gray-800 space-x-2 rounded-xl">
+                <div className="p-2">
+                  <div className="w-48 h-20 flex flex-row items-center justify-center space-x-2 rounded-xl">
                     <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-300 text-2xl tracking-tight">PRIDE</span>
                     <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-500 text-2xl tracking-tight">AUTO</span>
                   </div>
