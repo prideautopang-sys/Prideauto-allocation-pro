@@ -77,11 +77,12 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                   
                   // Handle Unique Violations more gracefully
                   if (err.code === '23505') {
-                      if (err.detail.includes('vin')) errorMessage = 'เลขตัวถัง (VIN) ซ้ำในระบบ';
-                      else if (err.detail.includes('front_motor_no')) errorMessage = 'เลขมอเตอร์หน้าซ้ำในระบบ';
-                      else if (err.detail.includes('rear_motor_no')) errorMessage = 'เลขมอเตอร์หลังซ้ำในระบบ';
-                      else if (err.detail.includes('battery_no')) errorMessage = 'เลขแบตเตอรี่ซ้ำในระบบ';
-                      else if (err.detail.includes('engine_no')) errorMessage = 'เลขเครื่องยนต์ซ้ำในระบบ';
+                      const detail = err.detail || '';
+                      if (detail.includes('vin')) errorMessage = 'เลขตัวถัง (VIN) ซ้ำในระบบ';
+                      else if (detail.includes('front_motor_no')) errorMessage = 'เลขมอเตอร์หน้าซ้ำในระบบ';
+                      else if (detail.includes('rear_motor_no')) errorMessage = 'เลขมอเตอร์หลังซ้ำในระบบ';
+                      else if (detail.includes('battery_no')) errorMessage = 'เลขแบตเตอรี่ซ้ำในระบบ';
+                      else if (detail.includes('engine_no')) errorMessage = 'เลขเครื่องยนต์ซ้ำในระบบ';
                       else errorMessage = 'ข้อมูลซ้ำในระบบ (Unique Constraint)';
                   }
 

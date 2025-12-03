@@ -222,27 +222,28 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
 
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">นำเข้าข้อมูล (Excel)</h2>
-            <button type="button" onClick={onClose} disabled={isUploading} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 transition-opacity">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-100 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">นำเข้าข้อมูล (Excel)</h2>
+            <button type="button" onClick={onClose} disabled={isUploading} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50 p-2 rounded-full bg-gray-50 dark:bg-gray-700">
                 <XIcon />
             </button>
         </div>
         <div className="p-6 flex-grow overflow-y-auto">
             
             {/* Instructions */}
-            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="mb-6 p-4 bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 rounded-xl">
                 <div className="flex items-start">
-                    <DocumentDownloadIcon />
-                    <div className="ml-3">
-                        <h3 className="text-sm font-bold text-blue-800 dark:text-blue-200">รูปแบบไฟล์ Excel ที่รองรับ</h3>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1 leading-relaxed">
+                    <div className="p-2 bg-sky-100 dark:bg-sky-800 rounded-lg text-sky-600 dark:text-sky-300">
+                        <DocumentDownloadIcon />
+                    </div>
+                    <div className="ml-4">
+                        <h3 className="text-sm font-bold text-sky-900 dark:text-sky-200">รูปแบบไฟล์ Excel ที่รองรับ</h3>
+                        <p className="text-sm text-sky-800 dark:text-sky-300 mt-1 leading-relaxed">
                             1. ไฟล์นามสกุล <strong>.xlsx</strong> หรือ <strong>.xls</strong><br/>
                             2. หัวตารางอยู่ที่แถว <strong>B3 ถึง N3</strong><br/>
-                            3. ข้อมูลเริ่มที่แถว <strong>B4</strong> เป็นต้นไป<br/>
-                            4. คอลัมน์เรียงตามลำดับ: Dealer Code (B), Name, Model, VIN, F.Motor, R.Motor, Battery, Engine, Color, Type, Date, PO, Price (N)
+                            3. ข้อมูลเริ่มที่แถว <strong>B4</strong> เป็นต้นไป
                         </p>
                     </div>
                 </div>
@@ -251,20 +252,21 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
             {/* File Input */}
             <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เลือกไฟล์ Excel</label>
-                <div className="flex items-center space-x-4">
-                    <input
+                <div className="relative">
+                     <input
                         ref={fileInputRef}
                         type="file"
                         accept=".xlsx, .xls"
                         onChange={handleFileChange}
                         disabled={isUploading}
                         className="block w-full text-sm text-gray-500 dark:text-gray-400
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-md file:border-0
+                            file:mr-4 file:py-2.5 file:px-4
+                            file:rounded-lg file:border-0
                             file:text-sm file:font-semibold
                             file:bg-sky-50 file:text-sky-700
                             dark:file:bg-sky-900/50 dark:file:text-sky-300
-                            hover:file:bg-sky-100 dark:hover:file:bg-sky-800"
+                            hover:file:bg-sky-100 dark:hover:file:bg-sky-800
+                            cursor-pointer border border-gray-200 dark:border-gray-600 rounded-lg"
                     />
                 </div>
             </div>
@@ -272,24 +274,24 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
             {/* Progress Bar */}
             {progress > 0 && (
                 <div className="mb-6">
-                    <div className="flex justify-between mb-1">
+                    <div className="flex justify-between mb-2">
                         <span className="text-sm font-medium text-sky-700 dark:text-sky-300">กำลังอัพโหลด...</span>
-                        <span className="text-sm font-medium text-sky-700 dark:text-sky-300">{progress}%</span>
+                        <span className="text-sm font-bold text-sky-700 dark:text-sky-300">{progress}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                        <div className="bg-sky-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                    <div className="w-full bg-gray-100 rounded-full h-3 dark:bg-gray-700">
+                        <div className="bg-sky-500 h-3 rounded-full transition-all duration-300 shadow-sm" style={{ width: `${progress}%` }}></div>
                     </div>
                 </div>
             )}
 
             {/* Logs Area */}
             {logs.length > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4 h-48 overflow-y-auto">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">สถานะการทำงาน</h4>
-                    <ul className="space-y-1">
+                <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 h-48 overflow-y-auto custom-scrollbar">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 sticky top-0 bg-gray-50 dark:bg-gray-900/90 pb-2">สถานะการทำงาน</h4>
+                    <ul className="space-y-2">
                         {logs.map((log, idx) => (
-                            <li key={idx} className={`text-sm flex items-start ${log.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                <span className="mr-2 mt-1">•</span>
+                            <li key={idx} className={`text-sm flex items-start ${log.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                <span className={`mr-2 mt-1.5 h-1.5 w-1.5 rounded-full ${log.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
                                 <span>{log.message}</span>
                             </li>
                         ))}
@@ -298,12 +300,12 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
             )}
         </div>
 
-        <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-lg">
+        <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 sm:flex sm:flex-row-reverse rounded-b-2xl border-t border-gray-100 dark:border-gray-700">
           <button
             type="button"
             onClick={handleProcessAndUpload}
             disabled={!file || isUploading}
-            className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-sky-600 text-base font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-2.5 bg-sky-600 text-base font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             {isUploading ? (
                 <>
@@ -324,7 +326,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
             type="button"
             onClick={logs.length > 0 ? resetModal : onClose}
             disabled={isUploading}
-            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-500 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+            className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2.5 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 transition-colors"
           >
             {logs.length > 0 ? 'ล้างข้อมูล / เริ่มใหม่' : 'ยกเลิก'}
           </button>

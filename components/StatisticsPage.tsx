@@ -16,17 +16,21 @@ interface StatCardProps {
     title: string;
     value: number;
     icon: React.ReactNode;
-    colorClass: string;
+    gradientClass: string;
+    iconColor: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, colorClass }) => (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex items-center justify-between transition-all duration-300 hover:shadow-xl hover:scale-105 ${colorClass}`}>
-        <div>
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{title}</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{value.toLocaleString()}</p>
-        </div>
-        <div className="opacity-80">
-            {icon}
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradientClass, iconColor }) => (
+    <div className={`relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}>
+        <div className={`absolute top-0 right-0 w-32 h-32 rounded-full transform translate-x-8 -translate-y-8 opacity-10 ${gradientClass}`}></div>
+        <div className="flex justify-between items-start z-10">
+            <div>
+                 <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{title}</p>
+                 <p className="text-3xl font-extrabold text-slate-800 dark:text-white mt-2">{value.toLocaleString()}</p>
+            </div>
+            <div className={`p-3 rounded-xl ${gradientClass} ${iconColor} bg-opacity-20`}>
+                {icon}
+            </div>
         </div>
     </div>
 );
@@ -181,93 +185,92 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
 
 
   const statCardsData = [
-    { title: CarStatus.WAITING_FOR_TRAILER, value: stats[CarStatus.WAITING_FOR_TRAILER] || 0, icon: <ClockIcon />, colorClass: "border-l-4 border-yellow-500" },
-    { title: CarStatus.ON_TRAILER, value: stats[CarStatus.ON_TRAILER] || 0, icon: <TruckIcon />, colorClass: "border-l-4 border-orange-500" },
-    { title: CarStatus.UNLOADED, value: stats[CarStatus.UNLOADED] || 0, icon: <DownloadIcon />, colorClass: "border-l-4 border-cyan-500" },
-    { title: CarStatus.IN_STOCK, value: stats[CarStatus.IN_STOCK] || 0, icon: <ArchiveIcon />, colorClass: "border-l-4 border-blue-500" },
-    { title: CarStatus.RESERVED, value: stats[CarStatus.RESERVED] || 0, icon: <BookmarkIcon />, colorClass: "border-l-4 border-purple-500" },
-    { title: CarStatus.SOLD, value: stats[CarStatus.SOLD] || 0, icon: <CheckCircleIcon />, colorClass: "border-l-4 border-green-500" },
+    { title: CarStatus.WAITING_FOR_TRAILER, value: stats[CarStatus.WAITING_FOR_TRAILER] || 0, icon: <ClockIcon />, gradientClass: "bg-yellow-500", iconColor: "text-yellow-600" },
+    { title: CarStatus.ON_TRAILER, value: stats[CarStatus.ON_TRAILER] || 0, icon: <TruckIcon />, gradientClass: "bg-orange-500", iconColor: "text-orange-600" },
+    { title: CarStatus.UNLOADED, value: stats[CarStatus.UNLOADED] || 0, icon: <DownloadIcon />, gradientClass: "bg-cyan-500", iconColor: "text-cyan-600" },
+    { title: CarStatus.IN_STOCK, value: stats[CarStatus.IN_STOCK] || 0, icon: <ArchiveIcon />, gradientClass: "bg-blue-500", iconColor: "text-blue-600" },
+    { title: CarStatus.RESERVED, value: stats[CarStatus.RESERVED] || 0, icon: <BookmarkIcon />, gradientClass: "bg-purple-500", iconColor: "text-purple-600" },
+    { title: CarStatus.SOLD, value: stats[CarStatus.SOLD] || 0, icon: <CheckCircleIcon />, gradientClass: "bg-green-500", iconColor: "text-green-600" },
   ];
 
   return (
-    <div className="p-4 sm:p-0">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">สรุปภาพรวมสต็อกรถยนต์</h2>
+    <div className="p-4 sm:p-0 space-y-8">
         
-        <div className="mb-8">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex items-center space-x-6 border-l-4 border-sky-500">
-                <div className="flex-shrink-0 bg-sky-100 dark:bg-sky-900/50 p-4 rounded-full"> <CollectionIcon /> </div>
+        <div className="bg-gradient-to-r from-sky-500 to-indigo-600 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
+             <div className="relative z-10 flex items-center gap-6">
+                <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-sm">
+                    <CollectionIcon className="h-10 w-10 text-white" />
+                </div>
                 <div>
-                    <p className="text-lg font-medium text-gray-500 dark:text-gray-400">รถยนต์ทั้งหมดในระบบ</p>
-                    <p className="text-5xl font-extrabold text-sky-600 dark:text-sky-400 mt-1">{(stats.total || 0).toLocaleString()}</p>
+                    <p className="text-sky-100 font-medium text-lg">รถยนต์ทั้งหมดในระบบ</p>
+                    <p className="text-5xl font-extrabold mt-1 tracking-tight">{(stats.total || 0).toLocaleString()}</p>
                 </div>
             </div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full transform translate-x-16 -translate-y-16"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-black opacity-10 rounded-full transform -translate-x-8 translate-y-8"></div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {statCardsData.map(data => <StatCard key={data.title} {...data} />)}
         </div>
 
-        <div className="mt-8">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
-                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Trend Analysis</h3>
-                     <div className="flex space-x-1 bg-gray-200 dark:bg-gray-700 p-1 rounded-lg self-start sm:self-center">
-                        <button onClick={() => setTimeframe('monthly')} className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${timeframe === 'monthly' ? 'bg-white dark:bg-gray-900 text-sky-600 dark:text-sky-400 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}>Monthly</button>
-                        <button onClick={() => setTimeframe('yearly')} className={`px-3 py-1 text-sm font-medium rounded-md transition-all ${timeframe === 'yearly' ? 'bg-white dark:bg-gray-900 text-sky-600 dark:text-sky-400 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}>Yearly</button>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
+                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Trend Analysis</h3>
+                     <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-xl flex">
+                        <button onClick={() => setTimeframe('monthly')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${timeframe === 'monthly' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Monthly</button>
+                        <button onClick={() => setTimeframe('yearly')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${timeframe === 'yearly' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Yearly</button>
                      </div>
                 </div>
                 <div className="h-80 w-full"> <LineChart chartData={lineChartData} /> </div>
             </div>
-        </div>
-        
-        <div className="mt-8">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
-                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sales Performance Analysis</h3>
-                     <input 
-                        type="month" 
-                        value={salesAnalysisDate}
-                        onChange={(e) => setSalesAnalysisDate(e.target.value)}
-                        className="bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-sm font-medium text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                     />
+
+             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <div className="flex justify-between items-center mb-6">
+                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Current Stock by Model</h3>
                 </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4">
-                    <div>
-                        <h4 className="text-center font-semibold text-gray-700 dark:text-gray-300 mb-2">Sales by Model</h4>
-                        <div className="h-80 w-full relative">
-                           {salesPerformanceData.modelsPieChart.labels.length > 0 ? (
-                                <PieChart chartData={salesPerformanceData.modelsPieChart} />
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center text-gray-500">No sales data for this month.</div>
-                            )}
-                        </div>
-                    </div>
-                    <div>
-                        <h4 className="text-center font-semibold text-gray-700 dark:text-gray-300 mb-2">Sales by Salesperson</h4>
-                         <div className="h-80 w-full relative">
-                           {salesPerformanceData.salespersonsPieChart.labels.length > 0 ? (
-                                <PieChart chartData={salesPerformanceData.salespersonsPieChart} />
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center text-gray-500">No sales data for this month.</div>
-                            )}
-                        </div>
-                    </div>
+                <div className="h-80 w-full relative">
+                   {stockByModelData.labels.length > 0 ? (
+                        <BarChart chartData={stockByModelData} />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-400">No cars currently in stock.</div>
+                    )}
                 </div>
             </div>
         </div>
         
-        <div className="mt-8">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6">
-                <div className="flex justify-between items-center mb-4">
-                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Current Stock by Model</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 border-b border-gray-100 dark:border-gray-700 pb-4">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sales Performance Analysis</h3>
+                    <input 
+                    type="month" 
+                    value={salesAnalysisDate}
+                    onChange={(e) => setSalesAnalysisDate(e.target.value)}
+                    className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h4 className="text-center text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">Sales by Model</h4>
+                    <div className="h-64 w-full relative">
+                        {salesPerformanceData.modelsPieChart.labels.length > 0 ? (
+                            <PieChart chartData={salesPerformanceData.modelsPieChart} />
+                        ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No sales data for this month.</div>
+                        )}
+                    </div>
                 </div>
-                <div className="h-96 w-full relative">
-                   {stockByModelData.labels.length > 0 ? (
-                        <BarChart chartData={stockByModelData} />
-                    ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-500">No cars currently in stock.</div>
-                    )}
+                <div>
+                    <h4 className="text-center text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">Sales by Salesperson</h4>
+                        <div className="h-64 w-full relative">
+                        {salesPerformanceData.salespersonsPieChart.labels.length > 0 ? (
+                            <PieChart chartData={salesPerformanceData.salespersonsPieChart} />
+                        ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No sales data for this month.</div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
