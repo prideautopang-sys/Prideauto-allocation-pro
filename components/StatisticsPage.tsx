@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { Car, Match, CarStatus, MatchStatus } from '../types';
 import { ArchiveIcon, BookmarkIcon, CheckCircleIcon, ClockIcon, CollectionIcon, DownloadIcon, TruckIcon } from './icons';
@@ -21,14 +22,14 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradientClass, iconColor }) => (
-    <div className={`relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}>
+    <div className={`relative overflow-hidden bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl shadow-sm border border-white/50 dark:border-gray-700/50 p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:-translate-y-1 animate-fade-in`}>
         <div className={`absolute top-0 right-0 w-32 h-32 rounded-full transform translate-x-8 -translate-y-8 opacity-10 ${gradientClass}`}></div>
         <div className="flex justify-between items-start z-10">
             <div>
                  <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{title}</p>
                  <p className="text-3xl font-extrabold text-slate-800 dark:text-white mt-2">{value.toLocaleString()}</p>
             </div>
-            <div className={`p-3 rounded-xl ${gradientClass} ${iconColor} bg-opacity-20`}>
+            <div className={`p-3 rounded-2xl ${gradientClass} ${iconColor} bg-opacity-20 backdrop-blur-sm shadow-sm`}>
                 {icon}
             </div>
         </div>
@@ -90,9 +91,9 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
     return {
       labels,
       datasets: [
-        { label: 'Allocated', data: allocatedData, borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.5)', tension: 0.1 },
-        { label: 'Stocked', data: stockedData, borderColor: 'rgb(139, 92, 246)', backgroundColor: 'rgba(139, 92, 246, 0.5)', tension: 0.1 },
-        { label: 'Sold', data: soldData, borderColor: 'rgb(22, 163, 74)', backgroundColor: 'rgba(22, 163, 74, 0.5)', tension: 0.1 },
+        { label: 'Allocated', data: allocatedData, borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.5)', tension: 0.3 },
+        { label: 'Stocked', data: stockedData, borderColor: 'rgb(139, 92, 246)', backgroundColor: 'rgba(139, 92, 246, 0.5)', tension: 0.3 },
+        { label: 'Sold', data: soldData, borderColor: 'rgb(22, 163, 74)', backgroundColor: 'rgba(22, 163, 74, 0.5)', tension: 0.3 },
       ],
     };
   }, [cars, matches, timeframe]);
@@ -194,41 +195,45 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
   ];
 
   return (
-    <div className="p-4 sm:p-0 space-y-8">
+    <div className="p-4 sm:p-0 space-y-8 animate-fade-in">
         
-        <div className="bg-gradient-to-r from-sky-500 to-indigo-600 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
+        <div className="bg-gradient-to-r from-sky-500 to-indigo-600 rounded-3xl shadow-xl p-8 text-white relative overflow-hidden transform hover:scale-[1.01] transition-transform duration-300">
              <div className="relative z-10 flex items-center gap-6">
-                <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-sm">
+                <div className="bg-white/20 p-5 rounded-2xl backdrop-blur-md shadow-lg">
                     <CollectionIcon className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                    <p className="text-sky-100 font-medium text-lg">รถยนต์ทั้งหมดในระบบ</p>
-                    <p className="text-5xl font-extrabold mt-1 tracking-tight">{(stats.total || 0).toLocaleString()}</p>
+                    <p className="text-sky-100 font-medium text-lg uppercase tracking-wider">รถยนต์ทั้งหมดในระบบ</p>
+                    <p className="text-6xl font-extrabold mt-1 tracking-tight">{(stats.total || 0).toLocaleString()}</p>
                 </div>
             </div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full transform translate-x-16 -translate-y-16"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-black opacity-10 rounded-full transform -translate-x-8 translate-y-8"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full transform translate-x-16 -translate-y-16 animate-float"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-black opacity-10 rounded-full transform -translate-x-8 translate-y-8 animate-float" style={{ animationDelay: '1s' }}></div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {statCardsData.map(data => <StatCard key={data.title} {...data} />)}
+            {statCardsData.map((data, idx) => (
+                <div key={data.title} className="animate-slide-up" style={{ animationDelay: `${idx * 100}ms` }}>
+                    <StatCard {...data} />
+                </div>
+            ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
-                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Trend Analysis</h3>
-                     <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-xl flex">
-                        <button onClick={() => setTimeframe('monthly')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${timeframe === 'monthly' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Monthly</button>
-                        <button onClick={() => setTimeframe('yearly')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${timeframe === 'yearly' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Yearly</button>
+                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">Trend Analysis</h3>
+                     <div className="bg-gray-100 dark:bg-gray-700 p-1.5 rounded-xl flex">
+                        <button onClick={() => setTimeframe('monthly')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${timeframe === 'monthly' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Monthly</button>
+                        <button onClick={() => setTimeframe('yearly')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${timeframe === 'yearly' ? 'bg-white dark:bg-gray-600 text-sky-600 dark:text-sky-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>Yearly</button>
                      </div>
                 </div>
                 <div className="h-80 w-full"> <LineChart chartData={lineChartData} /> </div>
             </div>
 
-             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+             <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
                 <div className="flex justify-between items-center mb-6">
-                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Current Stock by Model</h3>
+                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">Current Stock by Model</h3>
                 </div>
                 <div className="h-80 w-full relative">
                    {stockByModelData.labels.length > 0 ? (
@@ -240,19 +245,19 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
             </div>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 border-b border-gray-100 dark:border-gray-700 pb-4">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sales Performance Analysis</h3>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Sales Performance Analysis</h3>
                     <input 
                     type="month" 
                     value={salesAnalysisDate}
                     onChange={(e) => setSalesAnalysisDate(e.target.value)}
-                    className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2 text-sm font-medium text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-shadow"
                     />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
+                <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4">
                     <h4 className="text-center text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">Sales by Model</h4>
                     <div className="h-64 w-full relative">
                         {salesPerformanceData.modelsPieChart.labels.length > 0 ? (
@@ -262,7 +267,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
                         )}
                     </div>
                 </div>
-                <div>
+                <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-4">
                     <h4 className="text-center text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">Sales by Salesperson</h4>
                         <div className="h-64 w-full relative">
                         {salesPerformanceData.salespersonsPieChart.labels.length > 0 ? (

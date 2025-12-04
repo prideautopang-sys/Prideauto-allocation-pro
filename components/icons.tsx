@@ -7,7 +7,6 @@ export const PlusIcon = () => (
   </svg>
 );
 
-// UPDATED ICON
 export const EditIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
@@ -88,9 +87,15 @@ export const ArrowDownIcon: React.FC<{className?: string}> = ({ className }) => 
     </svg>
 );
 
+// UPDATED ICON: Truck Icon (More detailed, preserved Orange color)
 export const TruckIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" strokeLinecap="round" strokeLinejoin="round" />
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 13h-6v6h-2v-6H5v-4.33l6-2.67 6 2.67V13zM17 6H3v6h1.17l2 2H12v-2h-5l-2-2V8h12v-2zM7 16a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <rect x="1" y="3" width="7" height="11" rx="1" stroke="currentColor" strokeWidth="2" fill="none" transform="rotate(-90 4.5 8.5)"/>
+      <path d="M16 8h4a1 1 0 0 1 1 1v3h-5V8z" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <line x1="16" y1="15" x2="20" y2="15" stroke="currentColor" strokeWidth="2"/>
+      <circle cx="5.5" cy="18.5" r="2.5" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <circle cx="18.5" cy="18.5" r="2.5" stroke="currentColor" strokeWidth="2" fill="none"/>
     </svg>
 );
 
@@ -106,7 +111,6 @@ export const DocumentDownloadIcon = () => (
     </svg>
 );
 
-// UPDATED ICON
 export const TrashIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="3 6 5 6 21 6"></polyline>
@@ -122,7 +126,6 @@ export const ExclamationIcon = () => (
     </svg>
 );
 
-// UPDATED ICON
 export const LinkIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72" />
@@ -130,15 +133,15 @@ export const LinkIcon = () => (
     </svg>
 );
 
-// UPDATED ICON - Represents "Cancel Reservation" (User with X)
+// UPDATED ICON: Cancel Reservation (User with X)
 export const UnlinkIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16 11l6 6m0-6l-6 6" />
+    <line x1="15" y1="5" x2="21" y2="11" />
+    <line x1="21" y1="5" x2="15" y2="11" />
   </svg>
 );
 
-// UPDATED ICON - Represents Add to Stock (Upload)
 export const ArchiveInIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -147,11 +150,11 @@ export const ArchiveInIcon = () => (
     </svg>
 );
 
-// UPDATED ICON - Represents Remove from Stock (Archive Box with X)
+// UPDATED ICON: Remove from Stock (Box with X)
 export const ArchiveOutIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M10 12l4 4m0-4l-4 4" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 5l-3 3m0-3l3 3" transform="translate(4, -1)" />
     </svg>
 );
 
@@ -162,8 +165,6 @@ export const EyeIcon = () => (
   </svg>
 );
 
-
-{/* FIX: Add missing icon components */}
 export const UserIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
