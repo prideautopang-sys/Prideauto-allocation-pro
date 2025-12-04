@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { UserIcon, LockClosedIcon } from '../components/icons';
@@ -32,10 +31,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ logo }) => {
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-200 dark:from-slate-900 dark:to-slate-800 px-4 overflow-hidden font-sans">
       
       {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-sky-200/30 dark:bg-sky-900/20 blur-3xl pointer-events-none animate-float"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-200/30 dark:bg-indigo-900/20 blur-3xl pointer-events-none animate-float" style={{ animationDelay: '2s' }}></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-sky-200/30 dark:bg-sky-900/20 blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-200/30 dark:bg-indigo-900/20 blur-3xl pointer-events-none"></div>
 
-      <div className="w-full max-w-md mx-auto z-10 animate-scale-in">
+      <div className="w-full max-w-md mx-auto z-10">
         <div className="bg-white/70 dark:bg-gray-800/60 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-2xl w-full border border-white/50 dark:border-gray-700/50">
           <div className="flex justify-center mb-8">
              {logo ? (

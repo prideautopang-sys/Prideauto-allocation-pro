@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { Car, CarStatus, Match } from '../types';
 import { EditIcon, TrashIcon, UnlinkIcon, ArchiveOutIcon, ArchiveInIcon, LinkIcon, EyeIcon } from './icons';
@@ -118,12 +117,12 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
         }
 
         return (
-        <div key={car.id} className="group bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm shadow-sm hover:shadow-lg rounded-2xl p-5 border border-white/50 dark:border-gray-700 transition-all duration-300 animate-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
+        <div key={car.id} className="group bg-white dark:bg-gray-800 shadow-sm hover:shadow-md rounded-2xl p-5 border border-gray-100 dark:border-gray-700/60 transition-all duration-200">
           <div className="flex flex-col lg:flex-row gap-6">
             
             {/* Left Side: Number and Dates */}
             <div className="flex lg:flex-col items-center lg:items-start lg:w-48 shrink-0 lg:border-r border-gray-100 dark:border-gray-700 lg:pr-6 gap-4 lg:gap-0">
-                <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center font-bold text-gray-400 dark:text-gray-500 text-sm bg-gray-50 dark:bg-gray-700 rounded-xl shadow-inner">{index + 1}</div>
+                <div className="h-10 w-10 flex-shrink-0 flex items-center justify-center font-bold text-gray-400 dark:text-gray-500 text-sm bg-gray-50 dark:bg-gray-700 rounded-xl">{index + 1}</div>
                 <div className="lg:mt-4 space-y-3 w-full">
                     <div>
                         <div className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold mb-0.5">Allocation</div>
@@ -170,7 +169,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                             {match.licensePlate && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">ทะเบียน: {match.licensePlate}</div>}
                          </div>
                      ) : (
-                        <div className="h-full border border-dashed border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-center text-xs text-gray-400 bg-gray-50/50 dark:bg-gray-800/50">
+                        <div className="h-full border border-dashed border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-center text-xs text-gray-400">
                             No Match
                         </div>
                      )}

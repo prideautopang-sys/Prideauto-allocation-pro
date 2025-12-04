@@ -1,5 +1,4 @@
 
-
 import { VercelResponse } from '@vercel/node';
 import { sql } from '../../lib/db.js';
 import { withAuth, AuthenticatedRequest } from '../middleware/withAuth.js';
@@ -73,7 +72,7 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                   await sql(query, params);
                   return { success: true, vin };
               } catch (err: any) {
-                  // console.error(`Failed to import VIN ${car.vin}:`, err);
+                  console.error(`Failed to import VIN ${car.vin}:`, err);
                   let errorMessage = err.message;
                   
                   // Handle Unique Violations more gracefully

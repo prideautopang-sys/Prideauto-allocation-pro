@@ -26,7 +26,6 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<{type: 'success' | 'error', message: string}[]>([]);
-  const [isDragOver, setIsDragOver] = useState(false);
 
   if (!isOpen) return null;
 
@@ -35,38 +34,6 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
           setFile(e.target.files[0]);
           setLogs([]);
           setProgress(0);
-      }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragOver(false);
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-           // Check if it's an excel file
-           const droppedFile = e.dataTransfer.files[0];
-           if (!droppedFile.name.match(/\.(xlsx|xls)$/)) {
-               setLogs([{ type: 'error', message: 'กรุณาอัพโหลดไฟล์ .xlsx หรือ .xls เท่านั้น' }]);
-               return;
-           }
-           setFile(droppedFile);
-           setLogs([]);
-           setProgress(0);
-      }
-  };
-
-  const handleBrowseClick = () => {
-      if (!isUploading) {
-          fileInputRef.current?.click();
       }
   };
 
@@ -255,85 +222,76 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
 
 
   return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex justify-center items-center p-4 transition-opacity animate-fade-in">
-      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-white/20 dark:border-gray-700 animate-scale-in">
-        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white/50 dark:bg-gray-800/50 backdrop-blur-md rounded-t-3xl">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <ArchiveInIcon /> นำเข้าข้อมูล (Excel)
-            </h2>
-            <button type="button" onClick={onClose} disabled={isUploading} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 transition-opacity">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-100 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">นำเข้าข้อมูล (Excel)</h2>
+            <button type="button" onClick={onClose} disabled={isUploading} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50 p-2 rounded-full bg-gray-50 dark:bg-gray-700">
                 <XIcon />
             </button>
         </div>
-        
-        <div className="p-8 flex-grow overflow-y-auto">
+        <div className="p-6 flex-grow overflow-y-auto">
             
-            {/* Drag & Drop Area */}
-            <div 
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={handleBrowseClick}
-                className={`mb-8 border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 ${
-                    isDragOver 
-                    ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 scale-[1.02]' 
-                    : 'border-gray-300 dark:border-gray-600 hover:border-sky-400 hover:bg-gray-50 dark:hover:bg-gray-700/30'
-                }`}
-            >
-                 <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".xlsx, .xls"
-                    onChange={handleFileChange}
-                    disabled={isUploading}
-                    className="hidden"
-                />
-                
-                {file ? (
-                     <div className="animate-fade-in">
-                        <div className="h-16 w-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <DocumentDownloadIcon />
-                        </div>
-                        <p className="text-lg font-semibold text-gray-900 dark:text-white">{file.name}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{(file.size / 1024).toFixed(2)} KB</p>
-                        <p className="text-xs text-sky-600 dark:text-sky-400 mt-3 font-medium hover:underline">คลิกเพื่อเปลี่ยนไฟล์</p>
-                     </div>
-                ) : (
-                    <div>
-                        <div className="h-16 w-16 bg-sky-100 text-sky-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <ArchiveInIcon />
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">ลากไฟล์ Excel มาวางที่นี่</h3>
-                        <p className="text-gray-500 dark:text-gray-400 mt-2">หรือคลิกเพื่อเลือกไฟล์จากคอมพิวเตอร์</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">รองรับไฟล์ .xlsx, .xls (เริ่มอ่านข้อมูลจากแถว B4)</p>
+            {/* Instructions */}
+            <div className="mb-6 p-4 bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 rounded-xl">
+                <div className="flex items-start">
+                    <div className="p-2 bg-sky-100 dark:bg-sky-800 rounded-lg text-sky-600 dark:text-sky-300">
+                        <DocumentDownloadIcon />
                     </div>
-                )}
+                    <div className="ml-4">
+                        <h3 className="text-sm font-bold text-sky-900 dark:text-sky-200">รูปแบบไฟล์ Excel ที่รองรับ</h3>
+                        <p className="text-sm text-sky-800 dark:text-sky-300 mt-1 leading-relaxed">
+                            1. ไฟล์นามสกุล <strong>.xlsx</strong> หรือ <strong>.xls</strong><br/>
+                            2. หัวตารางอยู่ที่แถว <strong>B3 ถึง N3</strong><br/>
+                            3. ข้อมูลเริ่มที่แถว <strong>B4</strong> เป็นต้นไป
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* File Input */}
+            <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เลือกไฟล์ Excel</label>
+                <div className="relative">
+                     <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".xlsx, .xls"
+                        onChange={handleFileChange}
+                        disabled={isUploading}
+                        className="block w-full text-sm text-gray-500 dark:text-gray-400
+                            file:mr-4 file:py-2.5 file:px-4
+                            file:rounded-lg file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-sky-50 file:text-sky-700
+                            dark:file:bg-sky-900/50 dark:file:text-sky-300
+                            hover:file:bg-sky-100 dark:hover:file:bg-sky-800
+                            cursor-pointer border border-gray-200 dark:border-gray-600 rounded-lg"
+                    />
+                </div>
             </div>
 
             {/* Progress Bar */}
             {progress > 0 && (
-                <div className="mb-6 animate-fade-in">
+                <div className="mb-6">
                     <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium text-sky-700 dark:text-sky-300 flex items-center gap-2">
-                            {isUploading && <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
-                            {isUploading ? 'กำลังอัพโหลดข้อมูล...' : 'อัพโหลดเสร็จสิ้น'}
-                        </span>
+                        <span className="text-sm font-medium text-sky-700 dark:text-sky-300">กำลังอัพโหลด...</span>
                         <span className="text-sm font-bold text-sky-700 dark:text-sky-300">{progress}%</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-3 dark:bg-gray-700 overflow-hidden">
-                        <div className="bg-gradient-to-r from-sky-400 to-indigo-500 h-3 rounded-full transition-all duration-300 shadow-lg shadow-sky-500/30" style={{ width: `${progress}%` }}></div>
+                    <div className="w-full bg-gray-100 rounded-full h-3 dark:bg-gray-700">
+                        <div className="bg-sky-500 h-3 rounded-full transition-all duration-300 shadow-sm" style={{ width: `${progress}%` }}></div>
                     </div>
                 </div>
             )}
 
             {/* Logs Area */}
             {logs.length > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 h-48 overflow-y-auto custom-scrollbar animate-slide-up">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 sticky top-0 bg-gray-50 dark:bg-gray-900/90 pb-2 backdrop-blur-sm">สถานะการทำงาน</h4>
+                <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 h-48 overflow-y-auto custom-scrollbar">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 sticky top-0 bg-gray-50 dark:bg-gray-900/90 pb-2">สถานะการทำงาน</h4>
                     <ul className="space-y-2">
                         {logs.map((log, idx) => (
-                            <li key={idx} className={`text-sm flex items-start p-2 rounded-lg ${log.type === 'error' ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'}`}>
-                                <span className={`mr-2 mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${log.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+                            <li key={idx} className={`text-sm flex items-start ${log.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                <span className={`mr-2 mt-1.5 h-1.5 w-1.5 rounded-full ${log.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
                                 <span>{log.message}</span>
                             </li>
                         ))}
@@ -342,22 +300,35 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onSuccess })
             )}
         </div>
 
-        <div className="bg-gray-50 dark:bg-gray-800/80 px-8 py-5 sm:flex sm:flex-row-reverse rounded-b-3xl border-t border-gray-100 dark:border-gray-700 backdrop-blur-md">
+        <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 sm:flex sm:flex-row-reverse rounded-b-2xl border-t border-gray-100 dark:border-gray-700">
           <button
             type="button"
             onClick={handleProcessAndUpload}
             disabled={!file || isUploading}
-            className="w-full inline-flex justify-center items-center rounded-xl border border-transparent shadow-lg shadow-sky-500/20 px-6 py-3 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-base font-bold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5"
+            className="w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-2.5 bg-sky-600 text-base font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
-            {isUploading ? 'กำลังประมวลผล...' : 'เริ่มนำเข้าข้อมูล'}
+            {isUploading ? (
+                <>
+                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    กำลังประมวลผล...
+                </>
+            ) : (
+                <>
+                    <ArchiveInIcon /> 
+                    <span className="ml-2">เริ่มอัพโหลด</span>
+                </>
+            )}
           </button>
           <button
             type="button"
             onClick={logs.length > 0 ? resetModal : onClose}
             disabled={isUploading}
-            className="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 dark:border-gray-600 shadow-sm px-6 py-3 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 transition-colors"
+            className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2.5 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 transition-colors"
           >
-            {logs.length > 0 ? 'ล้างข้อมูล' : 'ยกเลิก'}
+            {logs.length > 0 ? 'ล้างข้อมูล / เริ่มใหม่' : 'ยกเลิก'}
           </button>
         </div>
       </div>
