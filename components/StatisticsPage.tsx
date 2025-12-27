@@ -226,7 +226,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
                 <div className="flex justify-between items-center mb-6">
                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Current Stock by Model</h3>
                 </div>
-                <div className="h-80 w-full relative">
+                <div className="h-[450px] w-full relative">
                    {stockByModelData.labels.length > 0 ? (
                         <BarChart chartData={stockByModelData} />
                     ) : (
@@ -253,7 +253,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-4">
                 <div>
                     <h4 className="text-sm font-bold text-gray-400 dark:text-gray-500 mb-6 uppercase tracking-widest">Sales by Model (Ranking)</h4>
-                    <div className="h-80 w-full relative">
+                    <div className="h-[450px] w-full relative">
                         {salesPerformanceData.modelsBarChart.labels.length > 0 ? (
                             <BarChart chartData={salesPerformanceData.modelsBarChart} />
                         ) : (
@@ -263,7 +263,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
                 </div>
                 <div>
                     <h4 className="text-sm font-bold text-gray-400 dark:text-gray-500 mb-6 uppercase tracking-widest">Sales by Salesperson (Ranking)</h4>
-                    <div className="h-80 w-full relative">
+                    <div className="h-[450px] w-full relative">
                         {salesPerformanceData.salespersonsBarChart.labels.length > 0 ? (
                             <BarChart chartData={salesPerformanceData.salespersonsBarChart} />
                         ) : (

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 
 // Chart.js is loaded from CDN, so we can use it globally.
@@ -37,7 +38,7 @@ const BarChart: React.FC<BarChartProps> = ({ chartData }) => {
                         const meta = chart.getDatasetMeta(0);
 
                         ctx.save();
-                        ctx.font = '600 12px sans-serif';
+                        ctx.font = '600 11px sans-serif';
                         
                         meta.data.forEach((element: any, index: number) => {
                             const dataValue = chart.data.datasets[0].data[index];
@@ -77,6 +78,12 @@ const BarChart: React.FC<BarChartProps> = ({ chartData }) => {
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: {
+                            padding: {
+                                left: 10,
+                                right: 20
+                            }
+                        },
                         elements: {
                             bar: {
                                 borderRadius: 4, // Rounded corners for bars
@@ -102,6 +109,10 @@ const BarChart: React.FC<BarChartProps> = ({ chartData }) => {
                                 beginAtZero: true,
                                 ticks: {
                                     color: textColor,
+                                    autoSkip: false, // Ensure all labels are shown
+                                    font: {
+                                        size: 11 // Slightly smaller font to fit long names
+                                    }
                                 },
                                 grid: {
                                     display: false,
