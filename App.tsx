@@ -97,7 +97,7 @@ const App: React.FC = () => {
     key: 'allocationDate', direction: 'descending',
   });
     
-  // FIX: Reset filters when changing views to prevent filter state from leaking between views.
+  // Reset filters when changing views to prevent filter state from leaking between views.
   useEffect(() => {
     setStagedFilters(initialFilters);
     setActiveFilters(initialFilters);
@@ -187,24 +187,20 @@ const App: React.FC = () => {
         ...carData
     } = formData;
 
-    // --- Car Data Preparation ---
     const carToSave: Car = { ...carData };
     
-    // --- Business Logic for Car Status ---
     const isMatchDataPresent = !!(matchCustomerName || matchSalesperson || matchStatus || matchSaleDate || matchLicensePlate || matchNotes);
     const hasExistingMatch = !!matchId;
 
     if (isMatchDataPresent) {
         carToSave.status = (matchStatus === MatchStatus.DELIVERED && matchSaleDate) ? CarStatus.SOLD : CarStatus.RESERVED;
-    } else if (hasExistingMatch) { // Match data was just cleared
+    } else if (hasExistingMatch) { 
         carToSave.status = carToSave.stockInDate ? CarStatus.IN_STOCK : CarStatus.UNLOADED;
     } else if (carToSave.stockInDate && carToSave.status === CarStatus.UNLOADED) {
-        // Handle case where stock date is added to a non-stock, non-reserved car
         carToSave.status = CarStatus.IN_STOCK;
     }
 
     if (!isEditing) {
-        // --- CREATE NEW CAR ---
         try {
             const response = await fetch('/api/cars', {
                 method: 'POST',
@@ -220,21 +216,18 @@ const App: React.FC = () => {
         } catch (error: any) {
             alert(`Error creating car: ${error.message}`);
         }
-        return; // Exit after creating
+        return;
     }
 
-    // --- EDIT EXISTING CAR ---
     try {
         const apiCalls: Promise<Response>[] = [];
 
-        // 1. Always update the car
         apiCalls.push(fetch(`/api/cars/${carToSave.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(carToSave)
         }));
 
-        // 2. Conditionally handle the match data
         if (isMatchDataPresent) {
             const matchPayload: Omit<Match, 'id'> & { id?: string } = {
                 carId: carToSave.id!,
@@ -246,20 +239,20 @@ const App: React.FC = () => {
                 notes: matchNotes || undefined,
             };
 
-            if (hasExistingMatch) { // Update existing match
+            if (hasExistingMatch) { 
                 apiCalls.push(fetch(`/api/matches/${matchId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ ...matchPayload, id: matchId })
                 }));
-            } else { // Create new match
+            } else { 
                 apiCalls.push(fetch(`/api/matches`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(matchPayload)
                 }));
             }
-        } else if (hasExistingMatch) { // Delete cleared match
+        } else if (hasExistingMatch) { 
             apiCalls.push(fetch(`/api/matches/${matchId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -270,7 +263,6 @@ const App: React.FC = () => {
 
         for (const response of responses) {
             if (!response.ok) {
-                // Try to get a meaningful error message
                 const errorData = await response.json().catch(() => ({ message: `An API call failed with status ${response.status} ${response.statusText}` }));
                 throw new Error(errorData.message);
             }
@@ -296,7 +288,6 @@ const App: React.FC = () => {
 
     try {
         if (deleteRequestContext === 'stock') {
-            // "Delete" from stock means resetting its stock status
             const updatedCar = { ...carToDelete, status: CarStatus.UNLOADED, stockInDate: undefined, stockLocation: undefined, stockNo: undefined };
             const response = await fetch(`/api/cars/${carToDelete.id}`, {
                 method: 'PUT',
@@ -306,7 +297,6 @@ const App: React.FC = () => {
             if (!response.ok) throw new Error('Failed to remove car from stock');
 
         } else if (deleteRequestContext === 'allocation') {
-            // Deleting from allocation is a permanent delete.
             const response = await fetch(`/api/cars/${carToDelete.id}`, { 
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` } 
@@ -459,10 +449,8 @@ const App: React.FC = () => {
     setMatchToDelete(null);
   };
   
-  // Simply refresh data, no need to post cars as ImportModal handles the upload
   const handleImportSuccess = async () => {
       await fetchData();
-      // We don't close the modal automatically to let the user see the logs/summary
   };
   
   const handleBatchAddToStock = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => {
@@ -573,6 +561,7 @@ const App: React.FC = () => {
 
       if (start || end) {
           let dateToCompare: Date | null = null;
+          // Filtering logic based on active view's specific context
           if (activeView === 'allocation') dateToCompare = car.allocationDate ? new Date(car.allocationDate) : null;
           else if (activeView === 'stock' || activeView === 'matching') dateToCompare = car.stockInDate ? new Date(car.stockInDate) : null;
           else if (activeView === 'sold') dateToCompare = match?.saleDate ? new Date(match.saleDate) : null;
@@ -591,7 +580,6 @@ const App: React.FC = () => {
                   if (key === 'matchStatus' && !filterValues.includes(match.status)) return false;
                   if (key === 'salesperson' && !filterValues.includes(match.salesperson)) return false;
               } else if (key === 'carStatus') {
-                  // FIX: The filter key is `carStatus` but the property on the Car object is `status`.
                   if (!filterValues.includes(car.status)) return false;
               } else {
                   const carValue = car[key as keyof Car];
@@ -616,7 +604,6 @@ const App: React.FC = () => {
   const viewMatchingCars = filteredCars.filter(c => c.status === CarStatus.RESERVED);
   const viewSoldCars = filteredCars.filter(c => c.status === CarStatus.SOLD);
 
-  // Stats calculation
   const stats = useMemo(() => {
     const carStats = cars.reduce((acc, car) => {
       acc[car.status] = (acc[car.status] || 0) + 1;
@@ -639,7 +626,6 @@ const App: React.FC = () => {
       setActiveFilters(initialFilters);
   };
 
-  // --- Filter Options ---
   const filterOptions = useMemo(() => {
     const createOptions = (key: keyof Car) => [...new Set(cars.map(c => c[key]).filter(Boolean))] as string[];
     return {
@@ -736,12 +722,23 @@ const App: React.FC = () => {
         return null;
     }
   };
+
+  // Determine standard counts vs filtered counts for badges
+  const getNavCount = (view: string) => {
+    switch (view) {
+      case 'allocation': return activeFilters === initialFilters ? cars.length : filteredCars.length;
+      case 'stock': return activeFilters === initialFilters ? stockCars.length : viewStockCars.length;
+      case 'matching': return activeFilters === initialFilters ? matchingCars.length : viewMatchingCars.length;
+      case 'sold': return activeFilters === initialFilters ? soldCars.length : viewSoldCars.length;
+      default: return undefined;
+    }
+  }
   
   const navigationItems = [
-    { view: 'allocation', label: 'Allocation', icon: CollectionIcon, count: cars.length },
-    { view: 'stock', label: 'Stock', icon: ArchiveIcon, count: stockCars.length },
-    { view: 'matching', label: 'Matching', icon: LinkIcon, count: matchingCars.length },
-    { view: 'sold', label: 'Sold', icon: ShoppingCartIcon, count: soldCars.length },
+    { view: 'allocation', label: 'Allocation', icon: CollectionIcon, count: getNavCount('allocation') },
+    { view: 'stock', label: 'Stock', icon: ArchiveIcon, count: getNavCount('stock') },
+    { view: 'matching', label: 'Matching', icon: LinkIcon, count: getNavCount('matching') },
+    { view: 'sold', label: 'Sold', icon: ShoppingCartIcon, count: getNavCount('sold') },
     { view: 'stats', label: 'Statistics', icon: ChartBarIcon },
   ];
   
@@ -754,6 +751,18 @@ const App: React.FC = () => {
   else if (activeView === 'stock') dateFilterLabel = 'In Stock Date';
   else if (activeView === 'matching') dateFilterLabel = 'In Stock Date';
   else if (activeView === 'sold') dateFilterLabel = 'Sold Date';
+
+  // Helper for showing "Showing X of Y" in the header
+  const getHeaderBadge = () => {
+    if (!['allocation', 'stock', 'matching', 'sold'].includes(activeView)) return 'Overview';
+    const totalMap: any = { allocation: cars.length, stock: stockCars.length, matching: matchingCars.length, sold: soldCars.length };
+    const filteredMap: any = { allocation: filteredCars.length, stock: viewStockCars.length, matching: viewMatchingCars.length, sold: viewSoldCars.length };
+    const totalCount = totalMap[activeView] || 0;
+    const filteredCount = filteredMap[activeView] || 0;
+    
+    if (activeFilters === initialFilters) return `ทั้งหมด ${totalCount} คัน`;
+    return `แสดงผล ${filteredCount} จาก ${totalCount} คัน`;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-gray-800 dark:text-gray-200 font-sans">
@@ -779,11 +788,11 @@ const App: React.FC = () => {
                       <item.icon className={`h-5 w-5 mr-2 ${activeView === item.view ? 'text-sky-600 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500'}`} />
                       {item.label}
                       {item.count !== undefined && (
-                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold transition-all duration-300 ${
                           activeView === item.view
                             ? 'bg-sky-200 text-sky-800 dark:bg-sky-800 dark:text-sky-200'
                             : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                        }`}>
+                        } ${activeFilters !== initialFilters && activeView === item.view ? 'ring-2 ring-sky-500 dark:ring-sky-400' : ''}`}>
                           {item.count}
                         </span>
                       )}
@@ -811,8 +820,8 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white capitalize tracking-tight flex items-center">
             {activeView}
-             <span className="ml-3 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hidden sm:inline-block">
-                Overview
+             <span className={`ml-3 px-3 py-1 rounded-full text-sm font-medium hidden sm:inline-block transition-all duration-300 ${activeFilters !== initialFilters ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300 ring-1 ring-sky-200 dark:ring-sky-800' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                {getHeaderBadge()}
              </span>
           </h1>
           {['allocation', 'stock', 'matching', 'sold'].includes(activeView) && (
@@ -970,11 +979,11 @@ const App: React.FC = () => {
                         <item.icon className={`h-6 w-6 mb-1 ${activeView === item.view ? 'transform scale-110' : ''} transition-transform`} />
                         <span className="text-[10px] font-medium">{item.label}</span>
                         {item.count !== undefined && (
-                            <span className={`absolute top-2 right-1/2 translate-x-3 transform px-1.5 py-0.5 rounded-full text-[9px] font-bold leading-none ${
+                            <span className={`absolute top-2 right-1/2 translate-x-3 transform px-1.5 py-0.5 rounded-full text-[9px] font-bold leading-none transition-all duration-300 ${
                                 activeView === item.view
                                 ? 'bg-sky-500 text-white shadow-sm'
                                 : 'bg-gray-300 text-white dark:bg-gray-600 dark:text-gray-200'
-                            }`}>
+                            } ${activeFilters !== initialFilters && activeView === item.view ? 'ring-2 ring-white' : ''}`}>
                                 {item.count}
                             </span>
                         )}
