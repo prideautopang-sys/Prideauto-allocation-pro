@@ -127,7 +127,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ logo }) => {
       </div>
       <footer className="relative z-10 text-center mt-12 text-sm text-gray-500 dark:text-gray-400">
         <p>© 2025 PRIDE AUTO Car Allocation Pro. All rights reserved.</p>
-        <p className="mt-1 font-medium opacity-70">Version 1.1.2</p>
+        <p className="mt-1 font-medium opacity-70">Version 1.1.4</p>
       </footer>
     </div>
   );
