@@ -98,7 +98,6 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
   }, [cars, matches, timeframe]);
 
   const salesPerformanceData = useMemo(() => {
-    // FIX: Explicitly type the Map and use non-null assertion for car ID to fix type inference issues.
     const carsById = new Map<string, Car>(cars.map(c => [c.id!, c]));
     const [year, month] = salesAnalysisDate.split('-').map(Number);
     
@@ -108,7 +107,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
         return saleDate.getFullYear() === year && saleDate.getMonth() === month - 1;
     });
 
-    const getAllModels = () => {
+    const getModelPerformance = () => {
         const counts = new Map<string, number>();
         relevantMatches.forEach(match => {
             const itemKey = carsById.get(match.carId)?.model;
@@ -121,11 +120,15 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
         
         return {
             labels: sorted.map(item => item[0]),
-            data: sorted.map(item => item[1]),
+            datasets: [{
+                label: 'Units Sold',
+                data: sorted.map(item => item[1]),
+                backgroundColor: 'rgba(14, 165, 233, 0.7)', // Sky-500
+            }]
         };
     };
 
-    const getAllSalespersons = () => {
+    const getSalespersonPerformance = () => {
         const counts = new Map<string, number>();
         relevantMatches.forEach(match => {
             const itemKey = match.salesperson;
@@ -136,25 +139,18 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
         const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
         return {
             labels: sorted.map(item => item[0]),
-            data: sorted.map(item => item[1]),
+            datasets: [{ 
+              label: 'Units Sold', 
+              data: sorted.map(item => item[1]),
+              backgroundColor: 'rgba(99, 102, 241, 0.7)', // Indigo-500
+            }]
         };
     };
 
-    const allModels = getAllModels();
-    const allSalespersons = getAllSalespersons();
-
     return {
-        modelsPieChart: {
-            labels: allModels.labels,
-            datasets: [{ label: 'Units Sold', data: allModels.data }]
-        },
-        salespersonsPieChart: {
-            labels: allSalespersons.labels,
-            datasets: [{ 
-              label: 'Units Sold', 
-              data: allSalespersons.data,
-            }]
-        }
+        modelsBarChart: getModelPerformance(),
+        salespersonsBarChart: getSalespersonPerformance(),
+        totalSoldInMonth: relevantMatches.length
     };
   }, [cars, matches, salesAnalysisDate]);
   
@@ -242,7 +238,10 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
         
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4 border-b border-gray-100 dark:border-gray-700 pb-4">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sales Performance Analysis</h3>
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sales Performance Analysis</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">ยอดขายรวมประจำเดือน: {salesPerformanceData.totalSoldInMonth} คัน</p>
+                    </div>
                     <input 
                     type="month" 
                     value={salesAnalysisDate}
@@ -251,24 +250,24 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
                     />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-4">
                 <div>
-                    <h4 className="text-center text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">Sales by Model</h4>
-                    <div className="h-64 w-full relative">
-                        {salesPerformanceData.modelsPieChart.labels.length > 0 ? (
-                            <PieChart chartData={salesPerformanceData.modelsPieChart} />
+                    <h4 className="text-sm font-bold text-gray-400 dark:text-gray-500 mb-6 uppercase tracking-widest">Sales by Model (Ranking)</h4>
+                    <div className="h-80 w-full relative">
+                        {salesPerformanceData.modelsBarChart.labels.length > 0 ? (
+                            <BarChart chartData={salesPerformanceData.modelsBarChart} />
                         ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No sales data for this month.</div>
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm italic">No sales data for this month.</div>
                         )}
                     </div>
                 </div>
                 <div>
-                    <h4 className="text-center text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">Sales by Salesperson</h4>
-                        <div className="h-64 w-full relative">
-                        {salesPerformanceData.salespersonsPieChart.labels.length > 0 ? (
-                            <PieChart chartData={salesPerformanceData.salespersonsPieChart} />
+                    <h4 className="text-sm font-bold text-gray-400 dark:text-gray-500 mb-6 uppercase tracking-widest">Sales by Salesperson (Ranking)</h4>
+                    <div className="h-80 w-full relative">
+                        {salesPerformanceData.salespersonsBarChart.labels.length > 0 ? (
+                            <BarChart chartData={salesPerformanceData.salespersonsBarChart} />
                         ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No sales data for this month.</div>
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm italic">No sales data for this month.</div>
                         )}
                     </div>
                 </div>
