@@ -47,11 +47,18 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
     );
   };
 
+  const getDealerLocation = (code: string) => {
+    if (code === '52101') return 'Mahasarakham';
+    if (code === '52102') return 'Kalasin';
+    return '';
+  };
+
   return (
     <div className="flex flex-col space-y-4">
       {cars.map((car, index) => {
         const match = matchesByCarId.get(car.id!);
         const isSold = car.status === CarStatus.SOLD;
+        const dealerLocation = getDealerLocation(car.dealerCode);
 
         const handleEdit = () => {
             if ((view === 'matching' || view === 'sold') && match && onEditMatch) {
@@ -155,7 +162,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                     <div className="flex flex-col gap-1">
                         <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">Dealer</div>
                         <div className="text-sm text-gray-700 dark:text-gray-300 font-medium">{car.dealerName}</div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500">{car.dealerCode} | Mahasarakham</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">{car.dealerCode}{dealerLocation ? ` | ${dealerLocation}` : ''}</div>
                     </div>
                 </div>
 
