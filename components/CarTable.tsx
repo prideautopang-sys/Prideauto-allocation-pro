@@ -41,7 +41,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
     if (!value || value === 'N/A' || value.trim() === '') return null;
     return (
         <div className="flex items-center text-xs group">
-            <span className="font-semibold w-16 shrink-0 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">{label}:</span>
+            <span className="font-semibold w-20 shrink-0 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">{label}:</span>
             <span className="font-mono text-gray-600 dark:text-gray-300 break-all bg-gray-50 dark:bg-gray-800/50 px-1.5 py-0.5 rounded">{value}</span>
         </div>
     );
@@ -151,9 +151,9 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
             </div>
 
             {/* Center: Main Info */}
-            <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-6">
+            <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-6">
                 {/* Dealer / Model */}
-                <div className="col-span-1 md:col-span-1">
+                <div className="col-span-1 md:col-span-3">
                     <div className="mb-4">
                         <div className="text-lg font-bold text-slate-800 dark:text-white leading-tight">{car.model}</div>
                         <div className="text-sm font-medium text-slate-500 dark:text-gray-400 mt-1">{car.color}</div>
@@ -167,7 +167,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                 </div>
 
                 {/* Match Info (if exists) or Empty */}
-                <div className="col-span-1 md:col-span-1">
+                <div className="col-span-1 md:col-span-3">
                      {match ? (
                          <div className="bg-sky-50 dark:bg-sky-900/20 rounded-xl p-3 border border-sky-100 dark:border-sky-800/30">
                             <h4 className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase mb-2">ข้อมูลการจอง</h4>
@@ -183,7 +183,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                 </div>
 
                 {/* Vehicle Identifiers */}
-                <div className="col-span-1 md:col-span-1">
+                <div className="col-span-1 md:col-span-4">
                     <h4 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-2">Identifiers</h4>
                     <div className="space-y-1.5">
                         <IdentifierRow label="VIN" value={car.vin} />
@@ -195,7 +195,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                 </div>
                 
                 {/* Status & Price */}
-                  <div className="col-span-1 md:col-span-1 flex flex-col justify-between">
+                  <div className="col-span-1 md:col-span-2 flex flex-col justify-between">
                     <div>
                          <h4 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-2">Details</h4>
                          <div className="text-sm text-gray-600 dark:text-gray-300"><span className="text-gray-400 text-xs">Type:</span> {car.carType || 'Normal'}</div>
