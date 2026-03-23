@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Car, CarStatus, Match } from '../types';
-import { EditIcon, TrashIcon, UnlinkIcon, ArchiveOutIcon, ArchiveInIcon, LinkIcon, EyeIcon } from './icons';
+import { EditIcon, TrashIcon, UnlinkIcon, ArchiveOutIcon, ArchiveInIcon, LinkIcon, EyeIcon, DollarSignIcon } from './icons';
 import StatusBadge from './StatusBadge';
 
 type UserRole = 'executive' | 'admin' | 'user';
@@ -18,6 +18,7 @@ interface CarTableProps {
   onDeleteMatch?: (match: Match) => void;
   onDeleteStockRequest?: (car: Car) => void;
   onMatchCar?: (car: Car) => void;
+  onSellTestDrive?: (car: Car) => void;
 }
 
 const formatDate = (dateString?: string | null): string => {
@@ -31,7 +32,7 @@ const formatDate = (dateString?: string | null): string => {
     });
 }
 
-const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock, onDelete, onEditMatch, onDeleteMatch, onDeleteStockRequest, onMatchCar, view, userRole }) => {
+const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock, onDelete, onEditMatch, onDeleteMatch, onDeleteStockRequest, onMatchCar, onSellTestDrive, view, userRole }) => {
   const canEdit = userRole !== 'user';
   
   // FIX: Explicitly type the Map to fix type inference issues with `match` being `unknown`.
@@ -97,6 +98,12 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
         const handleAddToStock = () => {
             if (onAddToStock) {
                 onAddToStock(car);
+            }
+        }
+
+        const handleSellTestDrive = () => {
+            if (onSellTestDrive) {
+                onSellTestDrive(car);
             }
         }
 
@@ -305,6 +312,15 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                                 <button onClick={handleEdit} title={editTitle} className="flex items-center justify-center w-10 h-10 rounded-xl text-sky-600 bg-sky-50 hover:bg-sky-100 hover:text-sky-700 dark:bg-sky-900/20 dark:text-sky-400 dark:hover:bg-sky-900/40 transition-colors shadow-sm">
                                     <EditIcon />
                                 </button>
+                                {view === 'testdrive' && car.status === CarStatus.TEST_DRIVE && canEdit && (
+                                    <button 
+                                        onClick={handleSellTestDrive} 
+                                        title="ขายรถ Test Drive" 
+                                        className="flex items-center justify-center w-10 h-10 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40 transition-colors shadow-sm"
+                                    >
+                                        <DollarSignIcon />
+                                    </button>
+                                )}
                                 {(showCarDeleteButton || showMatchDeleteButton) && (
                                     <button
                                         onClick={handleDelete}

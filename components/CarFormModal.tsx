@@ -38,11 +38,11 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, ca
         ...carToEdit,
         allocationDate: carToEdit.allocationDate ? new Date(carToEdit.allocationDate).toISOString().split('T')[0] : '',
         stockInDate: carToEdit.stockInDate ? new Date(carToEdit.stockInDate).toISOString().split('T')[0] : undefined,
-        testDriveDate: carToEdit.status === CarStatus.TEST_DRIVE 
+        testDriveDate: (carToEdit.status === CarStatus.TEST_DRIVE || carToEdit.status === CarStatus.TEST_DRIVE_SOLD)
             ? (carToEdit.stockInDate ? new Date(carToEdit.stockInDate).toISOString().split('T')[0] : undefined)
             : (carToEdit.testDriveDate ? new Date(carToEdit.testDriveDate).toISOString().split('T')[0] : undefined),
-        testDriveBranch: carToEdit.status === CarStatus.TEST_DRIVE ? carToEdit.stockLocation : carToEdit.testDriveBranch,
-        testDriveNo: carToEdit.status === CarStatus.TEST_DRIVE ? carToEdit.stockNo : carToEdit.testDriveNo,
+        testDriveBranch: (carToEdit.status === CarStatus.TEST_DRIVE || carToEdit.status === CarStatus.TEST_DRIVE_SOLD) ? carToEdit.stockLocation : carToEdit.testDriveBranch,
+        testDriveNo: (carToEdit.status === CarStatus.TEST_DRIVE || carToEdit.status === CarStatus.TEST_DRIVE_SOLD) ? carToEdit.stockNo : carToEdit.testDriveNo,
       } : initialCar;
 
       const matchPart = matchToEdit ? {
@@ -72,8 +72,8 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, ca
     setFormData(prev => {
       const newState = { ...prev, [name]: name === 'price' ? Number(value) : value };
       
-      // Sync fields if status is Test Drive
-      if (newState.status === CarStatus.TEST_DRIVE) {
+      // Sync fields if status is Test Drive or Test Drive Sold
+      if (newState.status === CarStatus.TEST_DRIVE || newState.status === CarStatus.TEST_DRIVE_SOLD) {
         if (name === 'testDriveDate') newState.stockInDate = value;
         if (name === 'testDriveBranch') newState.stockLocation = value as any;
         if (name === 'testDriveNo') newState.stockNo = value;
@@ -82,7 +82,7 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, ca
         if (name === 'stockLocation') newState.testDriveBranch = value as any;
         if (name === 'stockNo') newState.testDriveNo = value;
         
-        // If status was just changed to TEST_DRIVE, copy stock fields to test drive fields
+        // If status was just changed to TEST_DRIVE or TEST_DRIVE_SOLD, copy stock fields to test drive fields
         if (name === 'status') {
             newState.testDriveDate = newState.stockInDate;
             newState.testDriveBranch = newState.stockLocation;
@@ -212,8 +212,8 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, ca
                             </div>
                         )}
 
-                        {/* Test Drive Fields - Only show if status is Test Drive */}
-                        {formData.status === CarStatus.TEST_DRIVE && (
+                        {/* Test Drive Fields - Only show if status is Test Drive or Test Drive Sold */}
+                        {(formData.status === CarStatus.TEST_DRIVE || formData.status === CarStatus.TEST_DRIVE_SOLD) && (
                             <div className="bg-purple-50/50 dark:bg-purple-900/10 p-4 rounded-xl border border-purple-100 dark:border-purple-900/30 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <label htmlFor="testDriveDate" className="block text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wide mb-1.5">วันที่นำเข้า Test Drive</label>

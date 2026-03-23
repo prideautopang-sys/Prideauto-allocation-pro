@@ -11,6 +11,7 @@ import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ConfirmMatchDeleteModal from './components/ConfirmMatchDeleteModal';
 import ConfirmStockDeleteModal from './components/ConfirmStockDeleteModal';
 import StatisticsPage from './components/StatisticsPage';
+import SellTestDriveModal from './components/SellTestDriveModal';
 import { PlusIcon, ClipboardPlusIcon, UserIcon, UserGroupIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon, CogIcon } from './components/icons';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
@@ -74,11 +75,13 @@ const App: React.FC = () => {
   const [isAddFromAllocationModalOpen, setIsAddFromAllocationModalOpen] = useState(false);
   const [isMatchFormModalOpen, setIsMatchFormModalOpen] = useState(false);
   const [isAddToStockModalOpen, setIsAddToStockModalOpen] = useState(false);
+  const [isSellTestDriveModalOpen, setIsSellTestDriveModalOpen] = useState(false);
   
   // Editing/Deleting State
   const [editingCar, setEditingCar] = useState<Car | null>(null);
   const [carToMatch, setCarToMatch] = useState<Car | null>(null);
   const [carToAddToStock, setCarToAddToStock] = useState<Car | null>(null);
+  const [carToSellTestDrive, setCarToSellTestDrive] = useState<Car | null>(null);
   const [carToDelete, setCarToDelete] = useState<Car | null>(null);
   const [deleteRequestContext, setDeleteRequestContext] = useState<'allocation' | 'stock' | 'testdrive' | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
@@ -486,6 +489,50 @@ const App: React.FC = () => {
     setIsAddToStockModalOpen(true);
   };
 
+  const handleOpenSellTestDriveModal = (car: Car) => {
+    setCarToSellTestDrive(car);
+    setIsSellTestDriveModalOpen(true);
+  };
+
+  const handleConfirmSellTestDrive = async (data: { customerName: string; salesperson: string; saleDate: string; licensePlate: string }) => {
+    if (!carToSellTestDrive) return;
+
+    try {
+        // 1. Create a match
+        const matchPayload: Omit<Match, 'id'> = {
+            carId: carToSellTestDrive.id!,
+            customerName: data.customerName,
+            salesperson: data.salesperson,
+            status: MatchStatus.DELIVERED,
+            saleDate: data.saleDate,
+            licensePlate: data.licensePlate,
+        };
+
+        const matchResponse = await fetch('/api/matches', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(matchPayload)
+        });
+
+        if (!matchResponse.ok) throw new Error('Failed to create match for test drive sale');
+
+        // 2. Update car status to TEST_DRIVE_SOLD
+        const updatedCar = { ...carToSellTestDrive, status: CarStatus.TEST_DRIVE_SOLD };
+        const carResponse = await fetch(`/api/cars/${carToSellTestDrive.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(updatedCar)
+        });
+
+        if (!carResponse.ok) throw new Error('Failed to update car status to Test drive sold');
+
+        await fetchData();
+        handleCloseModals();
+    } catch (error: any) {
+        alert(`Error: ${error.message}`);
+    }
+  };
+
   const handleAddToStock = async (carId: string, stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => {
       const carToUpdate = cars.find(c => c.id === carId);
       if (!carToUpdate) {
@@ -521,10 +568,12 @@ const App: React.FC = () => {
     setIsAddFromAllocationModalOpen(false);
     setIsMatchFormModalOpen(false);
     setIsAddToStockModalOpen(false);
+    setIsSellTestDriveModalOpen(false);
     setEditingCar(null);
     setEditingMatch(null);
     setCarToMatch(null);
     setCarToAddToStock(null);
+    setCarToSellTestDrive(null);
   };
 
   // --- Filtering & Sorting Logic ---
@@ -608,12 +657,12 @@ const App: React.FC = () => {
   const allocatedCars = cars.filter(c => !c.stockInDate && c.status !== CarStatus.RESERVED && c.status !== CarStatus.SOLD);
   
   const stockCars = cars.filter(c => c.status === CarStatus.IN_STOCK);
-  const testDriveCars = cars.filter(c => c.status === CarStatus.TEST_DRIVE);
+  const testDriveCars = cars.filter(c => c.status === CarStatus.TEST_DRIVE || c.status === CarStatus.TEST_DRIVE_SOLD);
   const matchingCars = cars.filter(c => c.status === CarStatus.RESERVED);
   const soldCars = cars.filter(c => c.status === CarStatus.SOLD);
 
   const viewStockCars = filteredCars.filter(c => c.status === CarStatus.IN_STOCK);
-  const viewTestDriveCars = filteredCars.filter(c => c.status === CarStatus.TEST_DRIVE);
+  const viewTestDriveCars = filteredCars.filter(c => c.status === CarStatus.TEST_DRIVE || c.status === CarStatus.TEST_DRIVE_SOLD);
   const viewMatchingCars = filteredCars.filter(c => c.status === CarStatus.RESERVED);
   const viewSoldCars = filteredCars.filter(c => c.status === CarStatus.SOLD);
 
@@ -715,6 +764,7 @@ const App: React.FC = () => {
             onDelete={handleDeleteRequest}
             onMatchCar={handleOpenAddMatchModalForCar}
             onDeleteMatch={handleDeleteMatchRequest}
+            onSellTestDrive={handleOpenSellTestDriveModal}
           />
         );
       case 'matching':
@@ -803,21 +853,21 @@ const App: React.FC = () => {
                   <LogoUploader logo={logo} userRole={user.role} onLogoUpdate={fetchLogo} />
               </div>
               <div className="hidden lg:block">
-                <div className="ml-10 flex items-baseline space-x-2">
+                <div className="ml-4 flex items-baseline space-x-1">
                   {navigationItems.map(item => (
                     <button
                       key={item.view}
                       onClick={() => setActiveView(item.view as View)}
-                      className={`flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                      className={`flex items-center px-2 py-1 rounded-full text-[11px] font-medium transition-all duration-200 ${
                         activeView === item.view
                           ? 'bg-sky-100 text-sky-700 shadow-sm dark:bg-sky-900/50 dark:text-sky-300'
                           : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white'
                       }`}
                     >
-                      <item.icon className={`h-4 w-4 mr-1.5 ${activeView === item.view ? 'text-sky-600 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500'}`} />
+                      <item.icon className={`h-3.5 w-3.5 mr-1 ${activeView === item.view ? 'text-sky-600 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500'}`} />
                       {item.label}
                       {item.count !== undefined && (
-                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold transition-all duration-300 ${
+                        <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold transition-all duration-300 ${
                           activeView === item.view
                             ? 'bg-sky-200 text-sky-800 dark:bg-sky-800 dark:text-sky-200'
                             : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
@@ -968,6 +1018,13 @@ const App: React.FC = () => {
             onClose={handleCloseModals}
             onSave={handleAddToStock}
             car={carToAddToStock}
+        />
+        <SellTestDriveModal
+            isOpen={isSellTestDriveModalOpen}
+            onClose={handleCloseModals}
+            onConfirm={handleConfirmSellTestDrive}
+            car={carToSellTestDrive}
+            salespersons={salespersons}
         />
        <ConfirmDeleteModal 
             isOpen={!!carToDelete}

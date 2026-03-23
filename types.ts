@@ -32,6 +32,7 @@ export enum CarStatus {
   RESERVED = 'Reserved',
   SOLD = 'Sold',
   TEST_DRIVE = 'Test drive',
+  TEST_DRIVE_SOLD = 'Test drive sold',
 }
 
 export enum MatchStatus {
