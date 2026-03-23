@@ -38,7 +38,6 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, ca
         ...carToEdit,
         allocationDate: carToEdit.allocationDate ? new Date(carToEdit.allocationDate).toISOString().split('T')[0] : '',
         stockInDate: carToEdit.stockInDate ? new Date(carToEdit.stockInDate).toISOString().split('T')[0] : undefined,
-        testDriveDate: carToEdit.testDriveDate ? new Date(carToEdit.testDriveDate).toISOString().split('T')[0] : undefined,
       } : initialCar;
 
       const matchPart = matchToEdit ? {
@@ -174,29 +173,6 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, ca
                                 <label htmlFor="stockNo" className="block text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wide mb-1.5">เลขสต็อก</label>
                                 <input type="text" name="stockNo" id="stockNo" value={formData.stockNo || ''} onChange={handleChange}
                                     className="block w-full border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-                            </div>
-                        </div>
-
-                        {/* Test Drive Fields */}
-                        <div className="bg-purple-50/50 dark:bg-purple-900/10 p-4 rounded-xl border border-purple-100 dark:border-purple-900/30 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label htmlFor="testDriveDate" className="block text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wide mb-1.5">วันที่นำเข้า Test Drive</label>
-                                <input type="date" name="testDriveDate" id="testDriveDate" value={formData.testDriveDate || ''} onChange={handleChange}
-                                    className="block w-full border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-                            </div>
-                            <div>
-                                <label htmlFor="testDriveBranch" className="block text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wide mb-1.5">สาขา Test Drive</label>
-                                <select name="testDriveBranch" id="testDriveBranch" value={formData.testDriveBranch || ''} onChange={handleChange}
-                                    className="block w-full border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                                    <option value="">-- เลือกสาขา --</option>
-                                    <option value="มหาสารคาม">มหาสารคาม</option>
-                                    <option value="กาฬสินธุ์">กาฬสินธุ์</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label htmlFor="testDriveNo" className="block text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wide mb-1.5">เลข Test Drive (TCxxxx)</label>
-                                <input type="text" name="testDriveNo" id="testDriveNo" value={formData.testDriveNo || ''} onChange={handleChange}
-                                    className="block w-full border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
                             </div>
                         </div>
 

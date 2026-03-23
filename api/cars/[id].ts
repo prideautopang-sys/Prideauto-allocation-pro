@@ -22,8 +22,7 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
             const { 
                 dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
                 batteryNo, engineNo, color, carType, allocationDate, poType,
-                price, status, stockInDate, stockLocation, stockNo,
-                testDriveDate, testDriveBranch, testDriveNo
+                price, status, stockInDate, stockLocation, stockNo
             } = req.body as Car;
 
             const query = `
@@ -31,10 +30,8 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                     dealer_code = $1, dealer_name = $2, model = $3, vin = $4, front_motor_no = $5, 
                     rear_motor_no = $6, battery_no = $7, engine_no = $8, color = $9, car_type = $10, 
                     allocation_date = $11, po_type = $12, price = $13, status = $14, 
-                    stock_in_date = $15, stock_location = $16, stock_no = $17, 
-                    test_drive_date = $18, test_drive_branch = $19, test_drive_no = $20,
-                    updated_at = NOW()
-                WHERE id = $21
+                    stock_in_date = $15, stock_location = $16, stock_no = $17, updated_at = NOW()
+                WHERE id = $18
                 RETURNING *;
             `;
             
@@ -44,22 +41,19 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                 dealerName, 
                 model, 
                 vin, 
-                frontMotorNo || null, 
-                rearMotorNo || null,
-                batteryNo || null, 
-                engineNo || null, 
+                frontMotorNo ?? null, 
+                rearMotorNo ?? null,
+                batteryNo ?? null, 
+                engineNo ?? null, 
                 color, 
-                carType || null, 
-                allocationDate || null, 
-                poType || null,
+                carType ?? null, 
+                allocationDate, 
+                poType ?? null,
                 price, 
                 status, 
-                stockInDate || null, 
-                stockLocation || null, 
-                stockNo || null, 
-                testDriveDate || null,
-                testDriveBranch || null,
-                testDriveNo || null,
+                stockInDate ?? null, 
+                stockLocation ?? null, 
+                stockNo ?? null, 
                 id
             ];
             

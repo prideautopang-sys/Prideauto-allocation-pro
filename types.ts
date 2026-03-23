@@ -19,9 +19,6 @@ export interface Car {
   stockInDate?: string;
   stockLocation?: 'มหาสารคาม' | 'กาฬสินธุ์';
   stockNo?: string;
-  testDriveDate?: string;
-  testDriveBranch?: string;
-  testDriveNo?: string;
 }
 
 export enum CarStatus {
@@ -29,7 +26,6 @@ export enum CarStatus {
   ON_TRAILER = 'ขึ้นเทรลเลอร์',
   UNLOADED = 'รถลงแล้ว',
   IN_STOCK = 'In Stock',
-  TEST_DRIVE = 'Test Drive',
   RESERVED = 'Reserved',
   SOLD = 'Sold',
 }
