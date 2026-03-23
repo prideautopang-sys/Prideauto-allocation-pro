@@ -455,10 +455,11 @@ const App: React.FC = () => {
   
   const handleBatchAddToStock = async (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => {
       try {
+          const status = activeView === 'testdrive' ? CarStatus.TEST_DRIVE : CarStatus.IN_STOCK;
           const response = await fetch('/api/cars', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ carIds, stockInDate, stockLocation, stockNo })
+              body: JSON.stringify({ carIds, stockInDate, stockLocation, stockNo, status })
           });
           if (!response.ok) {
               const err = await response.json();
@@ -484,9 +485,10 @@ const App: React.FC = () => {
       }
 
       try {
+          const status = activeView === 'testdrive' ? CarStatus.TEST_DRIVE : CarStatus.IN_STOCK;
           const updatedCar = { 
               ...carToUpdate, 
-              status: CarStatus.IN_STOCK, 
+              status, 
               stockInDate,
               stockLocation,
               stockNo
@@ -765,7 +767,8 @@ const App: React.FC = () => {
   
   let dateFilterLabel = 'Date';
   if (activeView === 'allocation') dateFilterLabel = 'Allocation Date';
-  else if (activeView === 'stock' || activeView === 'testdrive') dateFilterLabel = 'In Stock Date';
+  else if (activeView === 'stock') dateFilterLabel = 'In Stock Date';
+  else if (activeView === 'testdrive') dateFilterLabel = 'Test Drive Date';
   else if (activeView === 'matching') dateFilterLabel = 'In Stock Date';
   else if (activeView === 'sold') dateFilterLabel = 'Sold Date';
 
@@ -857,7 +860,7 @@ const App: React.FC = () => {
                     )}
                      {(activeView === 'stock' || activeView === 'testdrive') && (
                          <button onClick={() => setIsAddFromAllocationModalOpen(true)} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-colors">
-                           <PlusIcon/> <span className="ml-2">เพิ่มรถเข้าสต็อก</span>
+                           <PlusIcon/> <span className="ml-2">{activeView === 'testdrive' ? 'นำรถเข้า Test Drive' : 'เพิ่มรถเข้าสต็อก'}</span>
                        </button>
                     )}
                      {activeView === 'matching' && (
@@ -938,6 +941,7 @@ const App: React.FC = () => {
         onClose={handleCloseModals}
         onSave={handleBatchAddToStock}
         allocatedCars={allocatedCars}
+        view={activeView === 'testdrive' ? 'testdrive' : 'stock'}
        />
        <MatchingFormModal
             isOpen={isMatchFormModalOpen}

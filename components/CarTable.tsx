@@ -137,7 +137,9 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                     </div>
                     {car.stockInDate && (
                         <div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold mb-0.5">In Stock</div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold mb-0.5">
+                                {car.status === CarStatus.TEST_DRIVE ? 'Test Drive' : 'In Stock'}
+                            </div>
                             <div className="font-semibold text-gray-800 dark:text-white">{formatDate(car.stockInDate)}</div>
                         </div>
                     )}

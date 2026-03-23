@@ -8,14 +8,19 @@ interface AddFromAllocationModalProps {
   onClose: () => void;
   onSave: (carIds: string[], stockInDate: string, stockLocation: 'มหาสารคาม' | 'กาฬสินธุ์', stockNo: string) => void;
   allocatedCars: Car[];
+  view: 'stock' | 'testdrive';
 }
 
-const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen, onClose, onSave, allocatedCars }) => {
+const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen, onClose, onSave, allocatedCars, view }) => {
   const [selectedCarIds, setSelectedCarIds] = useState<string[]>([]);
   const [stockInDate, setStockInDate] = useState(new Date().toISOString().split('T')[0]);
   const [stockLocation, setStockLocation] = useState<'มหาสารคาม' | 'กาฬสินธุ์'>('มหาสารคาม');
   const [stockNo, setStockNo] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const title = view === 'testdrive' ? 'นำรถเข้า Test Drive จาก Allocation' : 'เพิ่มรถเข้าสตอกจาก Allocation';
+  const submitLabel = view === 'testdrive' ? 'ยืนยันนำเข้า Test Drive' : 'ยืนยันเพิ่มเข้าสต็อก';
+  const dateLabel = view === 'testdrive' ? 'วันที่นำเข้า Test Drive' : 'วันที่นำเข้าสต็อก';
 
   const filteredCars = useMemo(() => {
     if (!searchTerm) return allocatedCars;
@@ -70,7 +75,7 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">เพิ่มรถเข้าสตอกจาก Allocation</h2>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{title}</h2>
                 <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                     <XIcon />
                 </button>
@@ -125,7 +130,7 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
             </div>
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label htmlFor="stockInDateModal" className="block text-sm font-medium text-gray-700 dark:text-gray-300">วันที่นำเข้าสต็อก</label>
+                    <label htmlFor="stockInDateModal" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{dateLabel}</label>
                     <input
                         type="date"
                         id="stockInDateModal"
@@ -160,7 +165,7 @@ const AddFromAllocationModal: React.FC<AddFromAllocationModalProps> = ({ isOpen,
           </div>
           <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-lg">
             <button type="submit" disabled={selectedCarIds.length === 0} className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-sky-600 text-base font-medium text-white hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed">
-              ยืนยันเพิ่มเข้าสต็อก ({selectedCarIds.length})
+              {submitLabel} ({selectedCarIds.length})
             </button>
             <button type="button" onClick={onClose} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-500 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
               ยกเลิก
