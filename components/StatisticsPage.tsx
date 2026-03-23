@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Car, Match, CarStatus, MatchStatus } from '../types';
-import { ArchiveIcon, BookmarkIcon, CheckCircleIcon, ClockIcon, CollectionIcon, DownloadIcon, TruckIcon } from './icons';
+import { ArchiveIcon, BookmarkIcon, CheckCircleIcon, ClockIcon, CollectionIcon, DownloadIcon, TruckIcon, CarIcon } from './icons';
 import LineChart from './LineChart';
 import PieChart from './PieChart';
 import BarChart from './BarChart';
@@ -185,6 +185,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
     { title: CarStatus.ON_TRAILER, value: stats[CarStatus.ON_TRAILER] || 0, icon: <TruckIcon />, gradientClass: "bg-orange-500", iconColor: "text-orange-600" },
     { title: CarStatus.UNLOADED, value: stats[CarStatus.UNLOADED] || 0, icon: <DownloadIcon />, gradientClass: "bg-cyan-500", iconColor: "text-cyan-600" },
     { title: CarStatus.IN_STOCK, value: stats[CarStatus.IN_STOCK] || 0, icon: <ArchiveIcon />, gradientClass: "bg-blue-500", iconColor: "text-blue-600" },
+    { title: CarStatus.TEST_DRIVE, value: stats[CarStatus.TEST_DRIVE] || 0, icon: <CarIcon />, gradientClass: "bg-rose-500", iconColor: "text-rose-600" },
     { title: CarStatus.RESERVED, value: stats[CarStatus.RESERVED] || 0, icon: <BookmarkIcon />, gradientClass: "bg-purple-500", iconColor: "text-purple-600" },
     { title: CarStatus.SOLD, value: stats[CarStatus.SOLD] || 0, icon: <CheckCircleIcon />, gradientClass: "bg-green-500", iconColor: "text-green-600" },
   ];
@@ -206,7 +207,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ stats, cars, matches })
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-black opacity-10 rounded-full transform -translate-x-8 translate-y-8"></div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {statCardsData.map(data => <StatCard key={data.title} {...data} />)}
         </div>
 
