@@ -288,7 +288,16 @@ const App: React.FC = () => {
 
     try {
         if (deleteRequestContext === 'stock' || deleteRequestContext === 'testdrive') {
-            const updatedCar = { ...carToDelete, status: CarStatus.UNLOADED, stockInDate: undefined, stockLocation: undefined, stockNo: undefined };
+            const updatedCar = { 
+                ...carToDelete, 
+                status: CarStatus.UNLOADED, 
+                stockInDate: undefined, 
+                stockLocation: undefined, 
+                stockNo: undefined,
+                testDriveDate: undefined,
+                testDriveBranch: undefined,
+                testDriveNo: undefined
+            };
             const response = await fetch(`/api/cars/${carToDelete.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

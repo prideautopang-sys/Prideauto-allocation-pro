@@ -38,7 +38,11 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, ca
         ...carToEdit,
         allocationDate: carToEdit.allocationDate ? new Date(carToEdit.allocationDate).toISOString().split('T')[0] : '',
         stockInDate: carToEdit.stockInDate ? new Date(carToEdit.stockInDate).toISOString().split('T')[0] : undefined,
-        testDriveDate: carToEdit.testDriveDate ? new Date(carToEdit.testDriveDate).toISOString().split('T')[0] : undefined,
+        testDriveDate: carToEdit.status === CarStatus.TEST_DRIVE 
+            ? (carToEdit.stockInDate ? new Date(carToEdit.stockInDate).toISOString().split('T')[0] : undefined)
+            : (carToEdit.testDriveDate ? new Date(carToEdit.testDriveDate).toISOString().split('T')[0] : undefined),
+        testDriveBranch: carToEdit.status === CarStatus.TEST_DRIVE ? carToEdit.stockLocation : carToEdit.testDriveBranch,
+        testDriveNo: carToEdit.status === CarStatus.TEST_DRIVE ? carToEdit.stockNo : carToEdit.testDriveNo,
       } : initialCar;
 
       const matchPart = matchToEdit ? {
@@ -65,7 +69,36 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, ca
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: name === 'price' ? Number(value) : value }));
+    setFormData(prev => {
+      const newState = { ...prev, [name]: name === 'price' ? Number(value) : value };
+      
+      // Sync fields if status is Test Drive
+      if (newState.status === CarStatus.TEST_DRIVE) {
+        if (name === 'testDriveDate') newState.stockInDate = value;
+        if (name === 'testDriveBranch') newState.stockLocation = value as any;
+        if (name === 'testDriveNo') newState.stockNo = value;
+        
+        if (name === 'stockInDate') newState.testDriveDate = value;
+        if (name === 'stockLocation') newState.testDriveBranch = value as any;
+        if (name === 'stockNo') newState.testDriveNo = value;
+        
+        // If status was just changed to TEST_DRIVE, copy stock fields to test drive fields
+        if (name === 'status') {
+            newState.testDriveDate = newState.stockInDate;
+            newState.testDriveBranch = newState.stockLocation;
+            newState.testDriveNo = newState.stockNo;
+        }
+      } else if (newState.status === CarStatus.IN_STOCK) {
+        // If status was just changed to IN_STOCK, copy test drive fields to stock fields
+        if (name === 'status') {
+            newState.stockInDate = newState.testDriveDate;
+            newState.stockLocation = newState.testDriveBranch;
+            newState.stockNo = newState.testDriveNo;
+        }
+      }
+      
+      return newState;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -154,51 +187,55 @@ const CarFormModal: React.FC<CarFormModalProps> = ({ isOpen, onClose, onSave, ca
                         </p>
                     </div>
                     <fieldset disabled={userRole === 'user'} className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Stock Fields */}
-                        <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label htmlFor="stockInDate" className="block text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wide mb-1.5">วันที่นำเข้าสต็อก</label>
-                                <input type="date" name="stockInDate" id="stockInDate" value={formData.stockInDate || ''} onChange={handleChange}
-                                    className="block w-full border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                        {/* Stock Fields - Only show if status is In Stock */}
+                        {formData.status === CarStatus.IN_STOCK && (
+                            <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label htmlFor="stockInDate" className="block text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wide mb-1.5">วันที่นำเข้าสต็อก</label>
+                                    <input type="date" name="stockInDate" id="stockInDate" value={formData.stockInDate || ''} onChange={handleChange}
+                                        className="block w-full border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                                </div>
+                                <div>
+                                    <label htmlFor="stockLocation" className="block text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wide mb-1.5">สต็อกสาขา</label>
+                                    <select name="stockLocation" id="stockLocation" value={formData.stockLocation || ''} onChange={handleChange}
+                                        className="block w-full border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                                        <option value="">-- เลือกสาขา --</option>
+                                        <option value="มหาสารคาม">มหาสารคาม</option>
+                                        <option value="กาฬสินธุ์">กาฬสินธุ์</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="stockNo" className="block text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wide mb-1.5">เลขสต็อก</label>
+                                    <input type="text" name="stockNo" id="stockNo" value={formData.stockNo || ''} onChange={handleChange}
+                                        className="block w-full border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                                </div>
                             </div>
-                            <div>
-                                <label htmlFor="stockLocation" className="block text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wide mb-1.5">สต็อกสาขา</label>
-                                <select name="stockLocation" id="stockLocation" value={formData.stockLocation || ''} onChange={handleChange}
-                                    className="block w-full border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                                    <option value="">-- เลือกสาขา --</option>
-                                    <option value="มหาสารคาม">มหาสารคาม</option>
-                                    <option value="กาฬสินธุ์">กาฬสินธุ์</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label htmlFor="stockNo" className="block text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wide mb-1.5">เลขสต็อก</label>
-                                <input type="text" name="stockNo" id="stockNo" value={formData.stockNo || ''} onChange={handleChange}
-                                    className="block w-full border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-                            </div>
-                        </div>
+                        )}
 
-                        {/* Test Drive Fields */}
-                        <div className="bg-purple-50/50 dark:bg-purple-900/10 p-4 rounded-xl border border-purple-100 dark:border-purple-900/30 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label htmlFor="testDriveDate" className="block text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wide mb-1.5">วันที่นำเข้า Test Drive</label>
-                                <input type="date" name="testDriveDate" id="testDriveDate" value={formData.testDriveDate || ''} onChange={handleChange}
-                                    className="block w-full border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                        {/* Test Drive Fields - Only show if status is Test Drive */}
+                        {formData.status === CarStatus.TEST_DRIVE && (
+                            <div className="bg-purple-50/50 dark:bg-purple-900/10 p-4 rounded-xl border border-purple-100 dark:border-purple-900/30 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label htmlFor="testDriveDate" className="block text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wide mb-1.5">วันที่นำเข้า Test Drive</label>
+                                    <input type="date" name="testDriveDate" id="testDriveDate" value={formData.testDriveDate || ''} onChange={handleChange}
+                                        className="block w-full border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                                </div>
+                                <div>
+                                    <label htmlFor="testDriveBranch" className="block text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wide mb-1.5">สาขา Test Drive</label>
+                                    <select name="testDriveBranch" id="testDriveBranch" value={formData.testDriveBranch || ''} onChange={handleChange}
+                                        className="block w-full border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                                        <option value="">-- เลือกสาขา --</option>
+                                        <option value="มหาสารคาม">มหาสารคาม</option>
+                                        <option value="กาฬสินธุ์">กาฬสินธุ์</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="testDriveNo" className="block text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wide mb-1.5">เลข Test Drive</label>
+                                    <input type="text" name="testDriveNo" id="testDriveNo" value={formData.testDriveNo || ''} onChange={handleChange}
+                                        className="block w-full border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                                </div>
                             </div>
-                            <div>
-                                <label htmlFor="testDriveBranch" className="block text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wide mb-1.5">สาขา Test Drive</label>
-                                <select name="testDriveBranch" id="testDriveBranch" value={formData.testDriveBranch || ''} onChange={handleChange}
-                                    className="block w-full border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                                    <option value="">-- เลือกสาขา --</option>
-                                    <option value="มหาสารคาม">มหาสารคาม</option>
-                                    <option value="กาฬสินธุ์">กาฬสินธุ์</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label htmlFor="testDriveNo" className="block text-xs font-bold text-purple-800 dark:text-purple-300 uppercase tracking-wide mb-1.5">เลข Test Drive (TCxxxx)</label>
-                                <input type="text" name="testDriveNo" id="testDriveNo" value={formData.testDriveNo || ''} onChange={handleChange}
-                                    className="block w-full border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
-                            </div>
-                        </div>
+                        )}
 
                         {/* Match Fields */}
                         <div className="md:col-span-2">
