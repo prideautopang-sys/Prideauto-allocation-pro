@@ -9,7 +9,7 @@ type UserRole = 'executive' | 'admin' | 'user';
 interface CarTableProps {
   cars: Car[];
   matches: Match[];
-  view: 'allocation' | 'stock' | 'matching' | 'sold';
+  view: 'allocation' | 'testDrive' | 'stock' | 'matching' | 'sold';
   userRole: UserRole;
   onEdit?: (car: Car) => void;
   onAddToStock?: (car: Car) => void;
@@ -71,7 +71,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
         const handleDelete = () => {
               if (view === 'matching' && match && onDeleteMatch) {
                 onDeleteMatch(match);
-            } else if ((view === 'allocation' || view === 'stock') && onDelete) {
+            } else if ((view === 'allocation' || view === 'testDrive' || view === 'stock') && onDelete) {
                 onDelete(car);
             }
         };
@@ -102,7 +102,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
 
         const editTitle = (view === 'matching' || view === 'sold') ? 'Edit Match Info' : 'Edit Car';
         
-        const showCarDeleteButton = (view === 'allocation' && userRole === 'executive') || (view === 'stock' && canEdit);
+        const showCarDeleteButton = ((view === 'allocation' || view === 'testDrive') && userRole === 'executive') || (view === 'stock' && canEdit);
         const showMatchDeleteButton = view === 'matching' && canEdit;
         
         const canBeUnstocked = !!car.stockInDate && car.status !== CarStatus.RESERVED && car.status !== CarStatus.SOLD;
@@ -226,7 +226,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
             <div className="lg:pl-6 lg:border-l border-gray-100 dark:border-gray-700 flex flex-row lg:flex-col items-center justify-end lg:justify-center gap-2 mt-4 lg:mt-0 pt-4 lg:pt-0 border-t lg:border-t-0">
                 {userRole !== 'user' ? (
                     <>
-                        {view === 'allocation' ? (
+                        {view === 'allocation' || view === 'testDrive' ? (
                             <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
                                 <button onClick={handleEdit} title="Edit Car" className="flex items-center justify-center w-8 h-8 rounded-lg text-sky-600 bg-sky-50 hover:bg-sky-100 hover:text-sky-700 dark:bg-sky-900/20 dark:text-sky-400 dark:hover:bg-sky-900/40 transition-colors">
                                     <EditIcon />

@@ -10,6 +10,14 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
   // GET all cars
   if (req.method === 'GET') {
     try {
+      // Auto-migrate
+      await sql(`
+        ALTER TABLE cars 
+        ADD COLUMN IF NOT EXISTS test_drive_date DATE,
+        ADD COLUMN IF NOT EXISTS test_drive_branch VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS test_drive_no VARCHAR(255);
+      `);
+
       const { rows } = await sql(`
         SELECT 
           id, dealer_code as "dealerCode", dealer_name as "dealerName", model, vin, 
@@ -17,7 +25,9 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
           battery_no as "batteryNo", engine_no as "engineNo", color, car_type as "carType", 
           allocation_date as "allocationDate", po_type as "poType", price, status, 
           stock_in_date as "stockInDate", stock_location as "stockLocation",
-          stock_no as "stockNo"
+          stock_no as "stockNo",
+          test_drive_date as "testDriveDate", test_drive_branch as "testDriveBranch",
+          test_drive_no as "testDriveNo"
         FROM cars ORDER BY allocation_date DESC
       `);
       return res.status(200).json(rows);
@@ -50,23 +60,24 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
                   const { 
                     dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
                     batteryNo, engineNo, color, carType, allocationDate, poType,
-                    price, status 
+                    price, status, testDriveDate, testDriveBranch, testDriveNo
                   } = car;
                   
                    const query = `
                     INSERT INTO cars (
                         dealer_code, dealer_name, model, vin, front_motor_no, rear_motor_no, 
                         battery_no, engine_no, color, car_type, allocation_date, po_type, 
-                        price, status
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                        price, status, test_drive_date, test_drive_branch, test_drive_no
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
                     RETURNING id;
                   `;
                   // Sanitize params
                   const params = [
                       dealerCode, dealerName, model, vin, 
-                      frontMotorNo ?? null, rearMotorNo ?? null, batteryNo ?? null, engineNo ?? null, 
-                      color, carType ?? null, allocationDate, poType ?? null,
-                      price, status || 'รอขึ้นเทรลเลอร์'
+                      frontMotorNo || null, rearMotorNo || null, batteryNo || null, engineNo || null, 
+                      color, carType || null, allocationDate || null, poType || null,
+                      price, status || 'รอขึ้นเทรลเลอร์',
+                      testDriveDate || null, testDriveBranch || null, testDriveNo || null
                   ];
                   
                   await sql(query, params);
@@ -115,7 +126,7 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
       const { 
           dealerCode, dealerName, model, vin, frontMotorNo, rearMotorNo,
           batteryNo, engineNo, color, carType, allocationDate, poType,
-          price, status 
+          price, status, testDriveDate, testDriveBranch, testDriveNo
       } = req.body as Car;
 
       if (!model || !vin || !price) {
@@ -126,16 +137,17 @@ const handler = async (req: AuthenticatedRequest, res: VercelResponse) => {
         INSERT INTO cars (
             dealer_code, dealer_name, model, vin, front_motor_no, rear_motor_no, 
             battery_no, engine_no, color, car_type, allocation_date, po_type, 
-            price, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            price, status, test_drive_date, test_drive_branch, test_drive_no
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         RETURNING *;
       `;
       
       const params = [
           dealerCode, dealerName, model, vin, 
-          frontMotorNo ?? null, rearMotorNo ?? null, batteryNo ?? null, engineNo ?? null, 
-          color, carType ?? null, allocationDate, poType ?? null,
-          price, status
+          frontMotorNo || null, rearMotorNo || null, batteryNo || null, engineNo || null, 
+          color, carType || null, allocationDate || null, poType || null,
+          price, status,
+          testDriveDate || null, testDriveBranch || null, testDriveNo || null
       ];
 
       const { rows } = await sql(query, params);

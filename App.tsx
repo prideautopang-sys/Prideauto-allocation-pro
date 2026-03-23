@@ -11,7 +11,7 @@ import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import ConfirmMatchDeleteModal from './components/ConfirmMatchDeleteModal';
 import ConfirmStockDeleteModal from './components/ConfirmStockDeleteModal';
 import StatisticsPage from './components/StatisticsPage';
-import { PlusIcon, ClipboardPlusIcon, UserIcon, UserGroupIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon, CogIcon } from './components/icons';
+import { PlusIcon, ClipboardPlusIcon, UserIcon, UserGroupIcon, ChartBarIcon, CollectionIcon, ArchiveIcon, LinkIcon, ShoppingCartIcon, FilterIcon, CogIcon, CarIcon } from './components/icons';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 import MultiSelectFilter from './components/MultiSelectFilter';
@@ -22,7 +22,7 @@ import LogoUploader from './components/LogoUploader';
 import ExportPage from './pages/ExportPage';
 
 
-type View = 'allocation' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons' | 'export';
+type View = 'allocation' | 'testDrive' | 'stock' | 'matching' | 'stats' | 'sold' | 'settings' | 'users' | 'salespersons' | 'export';
 
 type SortableKeys = keyof Car;
 
@@ -562,7 +562,7 @@ const App: React.FC = () => {
       if (start || end) {
           let dateToCompare: Date | null = null;
           // Filtering logic based on active view's specific context
-          if (activeView === 'allocation') dateToCompare = car.allocationDate ? new Date(car.allocationDate) : null;
+          if (activeView === 'allocation' || activeView === 'testDrive') dateToCompare = car.allocationDate ? new Date(car.allocationDate) : null;
           else if (activeView === 'stock' || activeView === 'matching') dateToCompare = car.stockInDate ? new Date(car.stockInDate) : null;
           else if (activeView === 'sold') dateToCompare = match?.saleDate ? new Date(match.saleDate) : null;
           
@@ -599,10 +599,12 @@ const App: React.FC = () => {
   const stockCars = cars.filter(c => c.status === CarStatus.IN_STOCK);
   const matchingCars = cars.filter(c => c.status === CarStatus.RESERVED);
   const soldCars = cars.filter(c => c.status === CarStatus.SOLD);
+  const testDriveCars = cars.filter(c => c.carType?.toLowerCase() === 'test drive');
 
   const viewStockCars = filteredCars.filter(c => c.status === CarStatus.IN_STOCK);
   const viewMatchingCars = filteredCars.filter(c => c.status === CarStatus.RESERVED);
   const viewSoldCars = filteredCars.filter(c => c.status === CarStatus.SOLD);
+  const viewTestDriveCars = filteredCars.filter(c => c.carType?.toLowerCase() === 'test drive');
 
   const stats = useMemo(() => {
     const carStats = cars.reduce((acc, car) => {
@@ -678,6 +680,21 @@ const App: React.FC = () => {
             onMatchCar={handleOpenAddMatchModalForCar}
           />
         );
+      case 'testDrive':
+        return (
+          <CarTable
+            cars={viewTestDriveCars}
+            matches={matches}
+            view={activeView}
+            userRole={user!.role}
+            onEdit={handleOpenEditCarModal}
+            onAddToStock={handleOpenAddToStockModal}
+            onDelete={handleDeleteRequest}
+            onDeleteStockRequest={handleDeleteStockRequest}
+            onDeleteMatch={handleDeleteMatchRequest}
+            onMatchCar={handleOpenAddMatchModalForCar}
+          />
+        );
       case 'stock':
         return (
           <CarTable
@@ -727,6 +744,7 @@ const App: React.FC = () => {
   const getNavCount = (view: string) => {
     switch (view) {
       case 'allocation': return activeFilters === initialFilters ? cars.length : filteredCars.length;
+      case 'testDrive': return activeFilters === initialFilters ? testDriveCars.length : viewTestDriveCars.length;
       case 'stock': return activeFilters === initialFilters ? stockCars.length : viewStockCars.length;
       case 'matching': return activeFilters === initialFilters ? matchingCars.length : viewMatchingCars.length;
       case 'sold': return activeFilters === initialFilters ? soldCars.length : viewSoldCars.length;
@@ -736,6 +754,7 @@ const App: React.FC = () => {
   
   const navigationItems = [
     { view: 'allocation', label: 'Allocation', icon: CollectionIcon, count: getNavCount('allocation') },
+    { view: 'testDrive', label: 'Test Drive', icon: CarIcon, count: getNavCount('testDrive') },
     { view: 'stock', label: 'Stock', icon: ArchiveIcon, count: getNavCount('stock') },
     { view: 'matching', label: 'Matching', icon: LinkIcon, count: getNavCount('matching') },
     { view: 'sold', label: 'Sold', icon: ShoppingCartIcon, count: getNavCount('sold') },
@@ -748,15 +767,16 @@ const App: React.FC = () => {
   
   let dateFilterLabel = 'Date';
   if (activeView === 'allocation') dateFilterLabel = 'Allocation Date';
+  else if (activeView === 'testDrive') dateFilterLabel = 'Allocation Date';
   else if (activeView === 'stock') dateFilterLabel = 'In Stock Date';
   else if (activeView === 'matching') dateFilterLabel = 'In Stock Date';
   else if (activeView === 'sold') dateFilterLabel = 'Sold Date';
 
   // Helper for showing "Showing X of Y" in the header
   const getHeaderBadge = () => {
-    if (!['allocation', 'stock', 'matching', 'sold'].includes(activeView)) return 'Overview';
-    const totalMap: any = { allocation: cars.length, stock: stockCars.length, matching: matchingCars.length, sold: soldCars.length };
-    const filteredMap: any = { allocation: filteredCars.length, stock: viewStockCars.length, matching: viewMatchingCars.length, sold: viewSoldCars.length };
+    if (!['allocation', 'testDrive', 'stock', 'matching', 'sold'].includes(activeView)) return 'Overview';
+    const totalMap: any = { allocation: cars.length, testDrive: testDriveCars.length, stock: stockCars.length, matching: matchingCars.length, sold: soldCars.length };
+    const filteredMap: any = { allocation: filteredCars.length, testDrive: viewTestDriveCars.length, stock: viewStockCars.length, matching: viewMatchingCars.length, sold: viewSoldCars.length };
     const totalCount = totalMap[activeView] || 0;
     const filteredCount = filteredMap[activeView] || 0;
     
