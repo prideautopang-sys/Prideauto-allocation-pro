@@ -9,10 +9,11 @@ type UserRole = 'executive' | 'admin' | 'user';
 interface CarTableProps {
   cars: Car[];
   matches: Match[];
-  view: 'allocation' | 'stock' | 'matching' | 'sold';
+  view: 'allocation' | 'stock' | 'testDrive' | 'matching' | 'sold';
   userRole: UserRole;
   onEdit?: (car: Car) => void;
   onAddToStock?: (car: Car) => void;
+  onAddToTestDrive?: (car: Car) => void;
   onDelete?: (car: Car) => void;
   onEditMatch?: (match: Match) => void;
   onDeleteMatch?: (match: Match) => void;
@@ -31,7 +32,7 @@ const formatDate = (dateString?: string | null): string => {
     });
 }
 
-const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock, onDelete, onEditMatch, onDeleteMatch, onDeleteStockRequest, onMatchCar, view, userRole }) => {
+const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock, onAddToTestDrive, onDelete, onEditMatch, onDeleteMatch, onDeleteStockRequest, onMatchCar, view, userRole }) => {
   const canEdit = userRole !== 'user';
   
   // FIX: Explicitly type the Map to fix type inference issues with `match` being `unknown`.
@@ -100,13 +101,20 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
             }
         }
 
+        const handleAddToTestDrive = () => {
+            if (onAddToTestDrive) {
+                onAddToTestDrive(car);
+            }
+        }
+
         const editTitle = (view === 'matching' || view === 'sold') ? 'Edit Match Info' : 'Edit Car';
         
-        const showCarDeleteButton = (view === 'allocation' && userRole === 'executive') || (view === 'stock' && canEdit);
+        const showCarDeleteButton = (view === 'allocation' && userRole === 'executive') || ((view === 'stock' || view === 'testDrive') && canEdit);
         const showMatchDeleteButton = view === 'matching' && canEdit;
         
         const canBeUnstocked = !!car.stockInDate && car.status !== CarStatus.RESERVED && car.status !== CarStatus.SOLD;
-        const canBeStocked = !car.stockInDate && car.status !== CarStatus.RESERVED && car.status !== CarStatus.SOLD;
+        const canBeStocked = !car.stockInDate && car.status !== CarStatus.RESERVED && car.status !== CarStatus.SOLD && car.status !== CarStatus.TEST_DRIVE;
+        const canBeTestDrive = !car.stockInDate && car.status !== CarStatus.RESERVED && car.status !== CarStatus.SOLD && car.status !== CarStatus.TEST_DRIVE;
         
         // Define the main action button's properties based on the view
         let MainActionIcon = TrashIcon;
@@ -139,6 +147,12 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                         <div>
                             <div className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold mb-0.5">In Stock</div>
                             <div className="font-semibold text-gray-800 dark:text-white">{formatDate(car.stockInDate)}</div>
+                        </div>
+                    )}
+                    {car.testDriveDate && (
+                        <div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold mb-0.5">Test Drive</div>
+                            <div className="font-semibold text-gray-800 dark:text-white">{formatDate(car.testDriveDate)}</div>
                         </div>
                     )}
                       {match?.saleDate && (
@@ -212,8 +226,16 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                                  {car.stockLocation}
                              </span>
                          )}
+                         {car.testDriveBranch && (
+                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                 {car.testDriveBranch}
+                             </span>
+                         )}
                          {car.stockNo && (
                              <span className="font-mono text-xs text-gray-400">S/N: {car.stockNo}</span>
+                         )}
+                         {car.testDriveNo && (
+                             <span className="font-mono text-xs text-gray-400">TD/N: {car.testDriveNo}</span>
                          )}
                          {match?.notes && (
                             <div className="text-xs text-gray-500 italic mt-1 max-w-[150px] truncate" title={match.notes}>"{match.notes}"</div>
@@ -246,11 +268,24 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
                                 </button>
 
                                 <button 
-                                    onClick={handleMatchCar} 
-                                    disabled={car.status !== CarStatus.IN_STOCK}
-                                    title={car.status === CarStatus.IN_STOCK ? "จับคู่รถ" : "Car must be 'In Stock' to be matched"}
+                                    onClick={handleAddToTestDrive} 
+                                    disabled={!canBeTestDrive}
+                                    title={canBeTestDrive ? "นำรถเข้า Test Drive" : "This car cannot be added to test drive"} 
                                     className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
-                                        car.status === CarStatus.IN_STOCK
+                                        canBeTestDrive 
+                                        ? 'text-purple-600 bg-purple-50 hover:bg-purple-100 hover:text-purple-700 dark:bg-purple-900/20 dark:text-purple-400'
+                                        : 'text-gray-300 bg-gray-50 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
+                                    }`}
+                                >
+                                    <ArchiveInIcon />
+                                </button>
+
+                                <button 
+                                    onClick={handleMatchCar} 
+                                    disabled={car.status !== CarStatus.IN_STOCK && car.status !== CarStatus.TEST_DRIVE}
+                                    title={car.status === CarStatus.IN_STOCK || car.status === CarStatus.TEST_DRIVE ? "จับคู่รถ" : "Car must be 'In Stock' or 'Test Drive' to be matched"}
+                                    className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                                        car.status === CarStatus.IN_STOCK || car.status === CarStatus.TEST_DRIVE
                                         ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400'
                                         : 'text-gray-300 bg-gray-50 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
                                     }`}>
