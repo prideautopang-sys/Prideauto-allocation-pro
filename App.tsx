@@ -808,13 +808,13 @@ const App: React.FC = () => {
                     <button
                       key={item.view}
                       onClick={() => setActiveView(item.view as View)}
-                      className={`flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                      className={`flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                         activeView === item.view
                           ? 'bg-sky-100 text-sky-700 shadow-sm dark:bg-sky-900/50 dark:text-sky-300'
                           : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white'
                       }`}
                     >
-                      <item.icon className={`h-5 w-5 mr-2 ${activeView === item.view ? 'text-sky-600 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500'}`} />
+                      <item.icon className={`h-4 w-4 mr-1.5 ${activeView === item.view ? 'text-sky-600 dark:text-sky-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500'}`} />
                       {item.label}
                       {item.count !== undefined && (
                         <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold transition-all duration-300 ${
