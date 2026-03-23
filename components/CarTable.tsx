@@ -119,7 +119,7 @@ const CarTable: React.FC<CarTableProps> = ({ cars, matches, onEdit, onAddToStock
             mainActionClassName = 'text-orange-500 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/40 dark:text-orange-400';
         } else if (view === 'stock' || view === 'testdrive') {
             MainActionIcon = ArchiveOutIcon;
-            mainActionTitle = 'Remove from Stock';
+            mainActionTitle = view === 'testdrive' ? 'Remove from Test Drive' : 'Remove from Stock';
             mainActionClassName = 'text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400';
         }
 

@@ -7,22 +7,31 @@ interface ConfirmDeleteModalProps {
   onClose: () => void;
   onConfirm: () => void;
   car: Car | null;
-  viewContext: 'allocation' | 'stock' | null;
+  viewContext: 'allocation' | 'stock' | 'testdrive' | null;
 }
 
 const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({ isOpen, onClose, onConfirm, car, viewContext }) => {
   if (!isOpen || !car) return null;
 
   const isStockDelete = viewContext === 'stock';
+  const isTestDriveDelete = viewContext === 'testdrive';
 
-  const title = isStockDelete ? 'นำรถออกจากสต็อก' : 'ยืนยันการลบข้อมูล';
-  const message = isStockDelete
-    ? 'คุณแน่ใจหรือไม่ว่าต้องการนำรถคันนี้ออกจากสต็อก? ข้อมูลรถจะยังคงอยู่ใน Allocation แต่สถานะจะเปลี่ยนเป็น "รถลงแล้ว"'
-    : 'คุณแน่ใจหรือไม่ว่าต้องการลบรถคันนี้? การกระทำนี้ไม่สามารถย้อนกลับได้';
-  const confirmButtonText = isStockDelete ? 'นำออกจากสต็อก' : 'ยืนยันการลบ';
-  const confirmButtonClasses = isStockDelete
-    ? 'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500'
-    : 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500';
+  let title = 'ยืนยันการลบข้อมูล';
+  let message = 'คุณแน่ใจหรือไม่ว่าต้องการลบรถคันนี้? การกระทำนี้ไม่สามารถย้อนกลับได้';
+  let confirmButtonText = 'ยืนยันการลบ';
+  let confirmButtonClasses = 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500';
+
+  if (isStockDelete) {
+    title = 'นำรถออกจากสต็อก';
+    message = 'คุณแน่ใจหรือไม่ว่าต้องการนำรถคันนี้ออกจากสต็อก? ข้อมูลรถจะยังคงอยู่ใน Allocation แต่สถานะจะเปลี่ยนเป็น "รถลงแล้ว"';
+    confirmButtonText = 'นำออกจากสต็อก';
+    confirmButtonClasses = 'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500';
+  } else if (isTestDriveDelete) {
+    title = 'นำรถออกจาก Test Drive';
+    message = 'คุณแน่ใจหรือไม่ว่าต้องการนำรถคันนี้ออกจาก Test Drive? ข้อมูลรถจะยังคงอยู่ใน Allocation แต่สถานะจะเปลี่ยนเป็น "รถลงแล้ว"';
+    confirmButtonText = 'นำออกจาก Test Drive';
+    confirmButtonClasses = 'bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500';
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">

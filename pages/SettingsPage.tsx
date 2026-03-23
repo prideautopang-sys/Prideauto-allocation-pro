@@ -3,9 +3,23 @@ import { UserGroupIcon, UserIcon, DocumentDownloadIcon } from '../components/ico
 
 interface SettingsPageProps {
   onNavigate: (view: 'users' | 'salespersons' | 'export') => void;
+  token: string;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate, token }) => {
+  const handleMigrate = async () => {
+    if (!confirm('Are you sure you want to run the database migration?')) return;
+    try {
+      const response = await fetch('/api/debug/migrate', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      alert(JSON.stringify(data, null, 2));
+    } catch (error: any) {
+      alert(`Migration failed: ${error.message}`);
+    }
+  };
+
   const settingsItems = [
     {
       title: 'Manage Salespersons',
@@ -25,16 +39,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
       icon: <DocumentDownloadIcon />,
       view: 'export' as const,
     },
+    {
+      title: 'Migrate Database',
+      description: 'Update database constraints to support Test Drive status.',
+      icon: <div className="w-6 h-6 flex items-center justify-center font-bold">M</div>,
+      onClick: handleMigrate,
+    },
   ];
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {settingsItems.map((item) => (
+        {settingsItems.map((item: any) => (
           <button
-            key={item.view}
-            onClick={() => onNavigate(item.view)}
+            key={item.title}
+            onClick={item.onClick || (() => item.view && onNavigate(item.view))}
             className="group text-left p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 flex items-start space-x-4"
           >
             <div className="flex-shrink-0 text-sky-500 bg-sky-100 dark:bg-sky-900/50 p-3 rounded-lg">

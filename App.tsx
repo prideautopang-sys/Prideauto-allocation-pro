@@ -80,7 +80,7 @@ const App: React.FC = () => {
   const [carToMatch, setCarToMatch] = useState<Car | null>(null);
   const [carToAddToStock, setCarToAddToStock] = useState<Car | null>(null);
   const [carToDelete, setCarToDelete] = useState<Car | null>(null);
-  const [deleteRequestContext, setDeleteRequestContext] = useState<'allocation' | 'stock' | null>(null);
+  const [deleteRequestContext, setDeleteRequestContext] = useState<'allocation' | 'stock' | 'testdrive' | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [matchToDelete, setMatchToDelete] = useState<Match | null>(null);
   const [carToUnstock, setCarToUnstock] = useState<Car | null>(null);
@@ -277,7 +277,7 @@ const App: React.FC = () => {
 };
   
   const handleDeleteRequest = (car: Car) => {
-    if (activeView === 'allocation' || activeView === 'stock') {
+    if (activeView === 'allocation' || activeView === 'stock' || activeView === 'testdrive') {
       setCarToDelete(car);
       setDeleteRequestContext(activeView);
     }
@@ -287,14 +287,14 @@ const App: React.FC = () => {
     if (!carToDelete || !deleteRequestContext) return;
 
     try {
-        if (deleteRequestContext === 'stock') {
+        if (deleteRequestContext === 'stock' || deleteRequestContext === 'testdrive') {
             const updatedCar = { ...carToDelete, status: CarStatus.UNLOADED, stockInDate: undefined, stockLocation: undefined, stockNo: undefined };
             const response = await fetch(`/api/cars/${carToDelete.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(updatedCar)
             });
-            if (!response.ok) throw new Error('Failed to remove car from stock');
+            if (!response.ok) throw new Error(`Failed to remove car from ${deleteRequestContext}`);
 
         } else if (deleteRequestContext === 'allocation') {
             const response = await fetch(`/api/cars/${carToDelete.id}`, { 
